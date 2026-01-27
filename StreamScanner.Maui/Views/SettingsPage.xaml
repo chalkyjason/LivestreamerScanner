@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="StreamScanner.Maui.Views.SettingsPage"
+             Title="Settings"
+             BackgroundColor="{StaticResource BgPrimary}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <Label Text="Settings"
+                   Style="{StaticResource HeaderTitle}"
+                   Margin="0,0,0,10" />
+
+            <!-- API Key Section -->
+            <Frame Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="YouTube API Key"
+                           TextColor="{StaticResource TextPrimary}"
+                           FontSize="16"
+                           FontAttributes="Bold" />
+
+                    <Label Text="Get your API key from Google Cloud Console → APIs &amp; Services → Credentials"
+                           TextColor="{StaticResource TextSecondary}"
+                           FontSize="13" />
+
+                    <Border Style="{StaticResource InputBorder}" HeightRequest="48">
+                        <Entry x:Name="ApiKeyEntry"
+                               Placeholder="Paste your YouTube API key here"
+                               Style="{StaticResource SearchEntry}"
+                               VerticalOptions="Center" />
+                    </Border>
+
+                    <Button Text="Save API Key"
+                            Clicked="OnSaveApiKeyClicked"
+                            Style="{StaticResource PrimaryButton}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Instructions -->
+            <Frame Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="How to get an API Key"
+                           TextColor="{StaticResource TextPrimary}"
+                           FontSize="16"
+                           FontAttributes="Bold" />
+
+                    <Label TextColor="{StaticResource TextSecondary}" FontSize="13">
+                        <Label.Text>1. Go to Google Cloud Console
+2. Create a new project (or select existing)
+3. Enable "YouTube Data API v3"
+4. Go to Credentials
+5. Click "Create Credentials" → "API Key"
+6. Copy and paste the key above</Label.Text>
+                    </Label>
+
+                    <Button Text="Open Google Cloud Console"
+                            Clicked="OnOpenConsoleClicked"
+                            BackgroundColor="{StaticResource BgTertiary}"
+                            TextColor="{StaticResource TextPrimary}"
+                            BorderColor="{StaticResource BorderPrimary}"
+                            BorderWidth="1"
+                            CornerRadius="10"
+                            HeightRequest="44" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- About -->
+            <Frame Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="About"
+                           TextColor="{StaticResource TextPrimary}"
+                           FontSize="16"
+                           FontAttributes="Bold" />
+
+                    <Label Text="Stream Scanner v1.0"
+                           TextColor="{StaticResource TextSecondary}"
+                           FontSize="13" />
+
+                    <Label Text="Discover live YouTube streams by keywords, sorted by viewer count."
+                           TextColor="{StaticResource TextMuted}"
+                           FontSize="13" />
+                </VerticalStackLayout>
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

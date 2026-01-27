@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Background Colors -->
+    <Color x:Key="BgPrimary">#0a0a0f</Color>
+    <Color x:Key="BgSecondary">#12121a</Color>
+    <Color x:Key="BgTertiary">#1a1a24</Color>
+    <Color x:Key="BgCard">#14141e</Color>
+    <Color x:Key="BgCardHover">#1a1a28</Color>
+
+    <!-- Border Colors -->
+    <Color x:Key="BorderPrimary">#2a2a3a</Color>
+    <Color x:Key="BorderSecondary">#3a3a4a</Color>
+
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimary">#f0f0f5</Color>
+    <Color x:Key="TextSecondary">#a0a0b0</Color>
+    <Color x:Key="TextMuted">#707080</Color>
+
+    <!-- Accent Colors -->
+    <Color x:Key="AccentRed">#ff0050</Color>
+    <Color x:Key="AccentRedLight">#ff4080</Color>
+    <Color x:Key="AccentBlue">#3b82f6</Color>
+    <Color x:Key="AccentGreen">#10b981</Color>
+    <Color x:Key="AccentPurple">#8b5cf6</Color>
+
+    <!-- Status Colors -->
+    <Color x:Key="StatusScanning">#3b82f6</Color>
+    <Color x:Key="StatusSuccess">#10b981</Color>
+    <Color x:Key="StatusError">#ff0050</Color>
+
+    <!-- Transparent variants for backgrounds -->
+    <Color x:Key="AccentRedTransparent">#33ff0050</Color>
+    <Color x:Key="AccentBlueTransparent">#333b82f6</Color>
+    <Color x:Key="AccentGreenTransparent">#3310b981</Color>
+
+</ResourceDictionary>
