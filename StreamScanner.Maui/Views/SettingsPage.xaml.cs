@@ -40,4 +40,9 @@ public partial class SettingsPage : ContentPage
             await DisplayAlert("Error", $"Could not open browser: {ex.Message}", "OK");
         }
     }
+
+    private async void OnBackTapped(object sender, EventArgs e)
+    {
+        await Navigation.PopAsync();
+    }
 }

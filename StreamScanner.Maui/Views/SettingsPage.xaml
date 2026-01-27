@@ -8,9 +8,26 @@
     <ScrollView>
         <VerticalStackLayout Padding="20" Spacing="20">
 
-            <Label Text="Settings"
-                   Style="{StaticResource HeaderTitle}"
-                   Margin="0,0,0,10" />
+            <HorizontalStackLayout Spacing="12" Margin="0,0,0,10">
+                <Border BackgroundColor="{StaticResource BgTertiary}"
+                        Stroke="{StaticResource BorderPrimary}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 10"
+                        WidthRequest="44"
+                        HeightRequest="44">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBackTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="←"
+                           FontSize="20"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           TextColor="{StaticResource TextPrimary}" />
+                </Border>
+                <Label Text="Settings"
+                       Style="{StaticResource HeaderTitle}"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
 
             <!-- API Key Section -->
             <Frame Style="{StaticResource CardFrame}">

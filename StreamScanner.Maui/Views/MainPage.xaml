@@ -118,13 +118,23 @@
                     </Border>
                 </VerticalStackLayout>
 
-                <!-- Scan Button -->
-                <Button Grid.Column="2"
-                        Text="Scan Now"
-                        Command="{Binding ScanCommand}"
-                        IsEnabled="{Binding IsScanning, Converter={toolkit:InvertedBoolConverter}}"
-                        Style="{StaticResource PrimaryButton}"
-                        VerticalOptions="End" />
+                <!-- Scan/Stop Buttons -->
+                <HorizontalStackLayout Grid.Column="2" Spacing="8" VerticalOptions="End">
+                    <Button Text="Scan Now"
+                            Command="{Binding ScanCommand}"
+                            IsEnabled="{Binding IsScanning, Converter={toolkit:InvertedBoolConverter}}"
+                            Style="{StaticResource PrimaryButton}" />
+                    <Button Text="Stop"
+                            Command="{Binding StopScanCommand}"
+                            IsEnabled="{Binding IsScanning}"
+                            BackgroundColor="{StaticResource BgTertiary}"
+                            TextColor="{StaticResource TextPrimary}"
+                            BorderColor="{StaticResource BorderPrimary}"
+                            BorderWidth="1"
+                            CornerRadius="10"
+                            HeightRequest="44"
+                            WidthRequest="80" />
+                </HorizontalStackLayout>
             </Grid>
         </Grid>
 

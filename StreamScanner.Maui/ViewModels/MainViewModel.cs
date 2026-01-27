@@ -10,6 +10,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IYouTubeService _youTubeService;
     private CancellationTokenSource? _autoRefreshCts;
+    private CancellationTokenSource? _scanCts;
     private bool _isAutoRefreshing;
 
     [ObservableProperty]
@@ -71,12 +72,23 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        // Cancel any existing scan
+        _scanCts?.Cancel();
+        _scanCts = new CancellationTokenSource();
+        var token = _scanCts.Token;
+
         IsScanning = true;
         SetStatus("Scanning...", "scanning");
 
         try
         {
-            var results = await _youTubeService.SearchLiveStreamsAsync(Keywords, SelectedMaxResults);
+            var results = await _youTubeService.SearchLiveStreamsAsync(Keywords, SelectedMaxResults, token);
+
+            if (token.IsCancellationRequested)
+            {
+                SetStatus("Scan cancelled", "default");
+                return;
+            }
 
             Streams.Clear();
             foreach (var stream in results)
@@ -101,13 +113,22 @@ public partial class MainViewModel : ObservableObject
             // Start auto-refresh if enabled
             StartAutoRefresh();
         }
+        catch (OperationCanceledException)
+        {
+            SetStatus("Scan cancelled", "default");
+        }
         catch (Exception ex)
         {
-            SetStatus($"Error: {ex.Message}", "error");
+            if (!token.IsCancellationRequested)
+            {
+                SetStatus($"Error: {ex.Message}", "error");
+            }
         }
         finally
         {
             IsScanning = false;
+            _scanCts?.Dispose();
+            _scanCts = null;
         }
     }
 
@@ -124,6 +145,14 @@ public partial class MainViewModel : ObservableObject
         {
             SetStatus($"Could not open URL: {ex.Message}", "error");
         }
+    }
+
+    [RelayCommand]
+    private void StopScan()
+    {
+        _scanCts?.Cancel();
+        StopAutoRefresh();
+        SetStatus("Scan stopped", "default");
     }
 
     [RelayCommand]
