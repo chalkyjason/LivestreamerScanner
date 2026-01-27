@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>YouTube Live Stream Scanner</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>YouTube Live Stream Scanner</h1>
+    <p class="sub">Comma-separated keywords • auto-refresh • sort by live viewers</p>
+  </header>
+
+  <section class="controls">
+    <label>
+      Keywords
+      <input id="keywords" placeholder="police, scanner, pursuit" />
+    </label>
+
+    <label>
+      Max results
+      <select id="max">
+        <option>10</option>
+        <option selected>25</option>
+        <option>50</option>
+      </select>
+    </label>
+
+    <label>
+      Refresh (sec)
+      <select id="refreshSec">
+        <option value="0">Off</option>
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="30">30</option>
+        <option value="60">60</option>
+      </select>
+    </label>
+
+    <button id="scanBtn">Scan</button>
+    <span id="status" class="status"></span>
+  </section>
+
+  <main>
+    <div id="results" class="results"></div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
