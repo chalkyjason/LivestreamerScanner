@@ -26,8 +26,12 @@ public static class MauiProgram
 
         // Register services
         builder.Services.AddSingleton<HttpClient>();
+        builder.Services.AddSingleton<ICacheService, CacheService>();
         builder.Services.AddSingleton<IYouTubeService>(sp =>
-            new YouTubeService(sp.GetRequiredService<HttpClient>(), apiKey));
+            new YouTubeService(
+                sp.GetRequiredService<HttpClient>(),
+                sp.GetRequiredService<ICacheService>(),
+                apiKey));
         builder.Services.AddSingleton<IFavoritesService, FavoritesService>();
 
         // Register ViewModels

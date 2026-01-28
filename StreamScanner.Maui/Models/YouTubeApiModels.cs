@@ -49,6 +49,9 @@ public class YouTubeSnippet
     [JsonPropertyName("channelTitle")]
     public string ChannelTitle { get; set; } = string.Empty;
 
+    [JsonPropertyName("channelId")]
+    public string ChannelId { get; set; } = string.Empty;
+
     [JsonPropertyName("publishedAt")]
     public DateTime? PublishedAt { get; set; }
 

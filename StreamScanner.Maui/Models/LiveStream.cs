@@ -6,6 +6,7 @@ public class LiveStream
     public string Url => $"https://www.youtube.com/watch?v={VideoId}";
     public string Title { get; set; } = string.Empty;
     public string ChannelTitle { get; set; } = string.Empty;
+    public string ChannelId { get; set; } = string.Empty;
     public string ThumbnailUrl { get; set; } = string.Empty;
     public DateTime? ActualStartTime { get; set; }
     public int? ConcurrentViewers { get; set; }
