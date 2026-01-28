@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:StreamScanner.Maui.ViewModels"
+             xmlns:models="clr-namespace:StreamScanner.Maui.Models"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="StreamScanner.Maui.Views.FavoritesPage"
+             x:DataType="viewmodels:FavoritesViewModel"
+             BackgroundColor="{StaticResource BgPrimary}">
+
+    <Grid RowDefinitions="Auto,Auto,*">
+
+        <!-- Header -->
+        <Grid Grid.Row="0"
+              BackgroundColor="{StaticResource BgSecondary}"
+              Padding="20,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Title -->
+            <HorizontalStackLayout Grid.Column="0" Spacing="12">
+                <Border BackgroundColor="{StaticResource AccentRed}"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 10"
+                        WidthRequest="44"
+                        HeightRequest="44">
+                    <Label Text="❤️"
+                           FontSize="20"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
+                <VerticalStackLayout VerticalOptions="Center" Spacing="2">
+                    <Label Text="Favorites"
+                           Style="{StaticResource HeaderTitle}" />
+                    <Label Text="YOUR FAVORITE STREAMERS"
+                           Style="{StaticResource HeaderSubtitle}" />
+                </VerticalStackLayout>
+            </HorizontalStackLayout>
+
+            <!-- Status Badge -->
+            <Frame Grid.Column="1"
+                   Style="{StaticResource StatusBadge}"
+                   VerticalOptions="Center">
+                <Label Text="{Binding StatusMessage}"
+                       TextColor="{StaticResource TextSecondary}"
+                       FontSize="13" />
+            </Frame>
+        </Grid>
+
+        <!-- Controls Section -->
+        <Grid Grid.Row="1"
+              BackgroundColor="{StaticResource BgSecondary}"
+              Padding="20,16"
+              ColumnDefinitions="*,Auto,Auto"
+              ColumnSpacing="12">
+
+            <!-- Auto-refresh Picker -->
+            <VerticalStackLayout Grid.Column="0" Spacing="6" HorizontalOptions="Start">
+                <Label Text="AUTO-REFRESH" Style="{StaticResource LabelText}" />
+                <Border Style="{StaticResource InputBorder}" WidthRequest="120">
+                    <Picker ItemsSource="{Binding RefreshOptions}"
+                            ItemDisplayBinding="{Binding Display}"
+                            SelectedItem="{Binding SelectedRefreshInterval, Converter={StaticResource RefreshOptionConverter}}"
+                            Style="{StaticResource OptionPicker}"
+                            VerticalOptions="Center" />
+                </Border>
+            </VerticalStackLayout>
+
+            <!-- Live Count Badge -->
+            <Frame Grid.Column="1"
+                   BackgroundColor="{StaticResource AccentGreenTransparent}"
+                   BorderColor="{StaticResource AccentGreen}"
+                   CornerRadius="20"
+                   Padding="16,8"
+                   HasShadow="False"
+                   VerticalOptions="End"
+                   IsVisible="{Binding HasFavorites}">
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="🟢" FontSize="12" />
+                    <Label Text="{Binding LiveCount, StringFormat='{0} Live'}"
+                           TextColor="{StaticResource AccentGreen}"
+                           FontSize="13"
+                           FontAttributes="Bold" />
+                </HorizontalStackLayout>
+            </Frame>
+
+            <!-- Refresh Button -->
+            <Button Grid.Column="2"
+                    Text="Check Now"
+                    Command="{Binding CheckLiveStatusCommand}"
+                    IsEnabled="{Binding IsChecking, Converter={toolkit:InvertedBoolConverter}}"
+                    Style="{StaticResource PrimaryButton}"
+                    VerticalOptions="End" />
+        </Grid>
+
+        <!-- Content Area -->
+        <Grid Grid.Row="2" Padding="20,16">
+
+            <!-- Empty State -->
+            <VerticalStackLayout IsVisible="{Binding ShowEmptyState}"
+                                 VerticalOptions="Center"
+                                 HorizontalOptions="Center"
+                                 Spacing="12">
+                <Label Text="💔"
+                       FontSize="60"
+                       HorizontalOptions="Center"
+                       Opacity="0.5" />
+                <Label Text="No Favorites Yet"
+                       Style="{StaticResource EmptyStateTitle}" />
+                <Label Text="Add streamers to favorites from the main scanner page"
+                       Style="{StaticResource EmptyStateText}" />
+            </VerticalStackLayout>
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator IsRunning="{Binding IsChecking}"
+                               IsVisible="{Binding IsChecking}"
+                               HeightRequest="50"
+                               WidthRequest="50"
+                               VerticalOptions="Center"
+                               HorizontalOptions="Center" />
+
+            <!-- Favorites List -->
+            <CollectionView ItemsSource="{Binding Favorites}"
+                            IsVisible="{Binding HasFavorites}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="models:FavoriteStreamer">
+                        <Frame Style="{StaticResource CardFrame}">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="16">
+
+                                <!-- Thumbnail or Placeholder -->
+                                <Grid Grid.Column="0" WidthRequest="120">
+                                    <!-- Live Thumbnail -->
+                                    <Border StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 10"
+                                            HeightRequest="68"
+                                            IsVisible="{Binding IsLive}">
+                                        <Image Source="{Binding CurrentThumbnailUrl}"
+                                               Aspect="AspectFill" />
+                                    </Border>
+
+                                    <!-- Offline Placeholder -->
+                                    <Border BackgroundColor="{StaticResource BgTertiary}"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 10"
+                                            HeightRequest="68"
+                                            IsVisible="{Binding IsLive, Converter={toolkit:InvertedBoolConverter}}">
+                                        <Label Text="📺"
+                                               FontSize="24"
+                                               Opacity="0.3"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+                                    </Border>
+
+                                    <!-- Live Badge -->
+                                    <Frame Style="{StaticResource LiveBadge}"
+                                           HorizontalOptions="Start"
+                                           VerticalOptions="Start"
+                                           Margin="6"
+                                           IsVisible="{Binding IsLive}">
+                                        <HorizontalStackLayout Spacing="6">
+                                            <Ellipse Fill="White"
+                                                     WidthRequest="6"
+                                                     HeightRequest="6" />
+                                            <Label Text="LIVE"
+                                                   TextColor="White"
+                                                   FontSize="9"
+                                                   FontAttributes="Bold" />
+                                        </HorizontalStackLayout>
+                                    </Frame>
+                                </Grid>
+
+                                <!-- Streamer Info -->
+                                <VerticalStackLayout Grid.Column="1"
+                                                     VerticalOptions="Center"
+                                                     Spacing="4">
+                                    <Label Text="{Binding ChannelTitle}"
+                                           Style="{StaticResource StreamTitle}"
+                                           MaxLines="1" />
+
+                                    <!-- Stream Title (if live) -->
+                                    <Label Text="{Binding CurrentStreamTitle}"
+                                           Style="{StaticResource StreamMeta}"
+                                           MaxLines="1"
+                                           LineBreakMode="TailTruncation"
+                                           IsVisible="{Binding IsLive}" />
+
+                                    <!-- Offline message -->
+                                    <Label Text="Currently offline"
+                                           TextColor="{StaticResource TextMuted}"
+                                           FontSize="13"
+                                           IsVisible="{Binding IsLive, Converter={toolkit:InvertedBoolConverter}}" />
+
+                                    <!-- Viewer count (if live) -->
+                                    <HorizontalStackLayout Spacing="6" IsVisible="{Binding IsLive}">
+                                        <Label Text="👥" FontSize="11" />
+                                        <Label Text="{Binding ViewerCountDisplay, StringFormat='{0} viewers'}"
+                                               TextColor="{StaticResource TextSecondary}"
+                                               FontSize="12" />
+                                    </HorizontalStackLayout>
+                                </VerticalStackLayout>
+
+                                <!-- Watch Button (if live) -->
+                                <Button Grid.Column="2"
+                                        Text="Watch"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:FavoritesViewModel}}, Path=OpenStreamCommand}"
+                                        CommandParameter="{Binding .}"
+                                        BackgroundColor="{StaticResource AccentGreen}"
+                                        TextColor="White"
+                                        FontSize="13"
+                                        FontAttributes="Bold"
+                                        CornerRadius="8"
+                                        HeightRequest="36"
+                                        Padding="16,0"
+                                        VerticalOptions="Center"
+                                        IsVisible="{Binding IsLive}" />
+
+                                <!-- Remove Button -->
+                                <Border Grid.Column="3"
+                                        BackgroundColor="{StaticResource BgTertiary}"
+                                        Stroke="{StaticResource BorderPrimary}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 8"
+                                        WidthRequest="36"
+                                        HeightRequest="36"
+                                        VerticalOptions="Center">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:FavoritesViewModel}}, Path=RemoveFavoriteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="🗑️"
+                                           FontSize="14"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </Grid>
+
+    </Grid>
+</ContentPage>

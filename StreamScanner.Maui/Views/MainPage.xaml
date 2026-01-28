@@ -40,13 +40,29 @@
                 </VerticalStackLayout>
             </HorizontalStackLayout>
 
-            <!-- Status Badge and Settings -->
+            <!-- Status Badge and Buttons -->
             <HorizontalStackLayout Grid.Column="1" Spacing="12" VerticalOptions="Center">
                 <Frame Style="{StaticResource StatusBadge}">
                     <Label Text="{Binding StatusMessage}"
                            TextColor="{StaticResource TextSecondary}"
                            FontSize="13" />
                 </Frame>
+
+                <!-- Favorites Button -->
+                <Border BackgroundColor="{StaticResource BgTertiary}"
+                        Stroke="{StaticResource BorderPrimary}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 10"
+                        WidthRequest="44"
+                        HeightRequest="44">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnFavoritesTapped" />
+                    </Border.GestureRecognizers>
+                    <Label Text="❤️"
+                           FontSize="18"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center" />
+                </Border>
 
                 <!-- Settings Button -->
                 <Border BackgroundColor="{StaticResource BgTertiary}"
@@ -186,7 +202,7 @@
                     <LinearItemsLayout Orientation="Vertical" ItemSpacing="12" />
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="models:LiveStream">
+                    <DataTemplate x:DataType="viewmodels:LiveStreamItem">
                         <Frame Style="{StaticResource CardFrame}">
                             <Frame.GestureRecognizers>
                                 <TapGestureRecognizer
@@ -194,14 +210,14 @@
                                     CommandParameter="{Binding .}" />
                             </Frame.GestureRecognizers>
 
-                            <Grid ColumnDefinitions="160,*,Auto" ColumnSpacing="16">
+                            <Grid ColumnDefinitions="160,*,Auto,Auto" ColumnSpacing="12">
 
                                 <!-- Thumbnail -->
                                 <Grid Grid.Column="0">
                                     <Border StrokeThickness="0"
                                             StrokeShape="RoundRectangle 10"
                                             HeightRequest="90">
-                                        <Image Source="{Binding ThumbnailUrl}"
+                                        <Image Source="{Binding Stream.ThumbnailUrl}"
                                                Aspect="AspectFill" />
                                     </Border>
 
@@ -227,24 +243,44 @@
                                 <VerticalStackLayout Grid.Column="1"
                                                      VerticalOptions="Center"
                                                      Spacing="6">
-                                    <Label Text="{Binding Title}"
+                                    <Label Text="{Binding Stream.Title}"
                                            Style="{StaticResource StreamTitle}" />
                                     <HorizontalStackLayout Spacing="6">
                                         <Label Text="👤"
                                                FontSize="12" />
-                                        <Label Text="{Binding ChannelTitle}"
+                                        <Label Text="{Binding Stream.ChannelTitle}"
                                                Style="{StaticResource StreamMeta}" />
                                     </HorizontalStackLayout>
                                     <HorizontalStackLayout Spacing="6">
                                         <Label Text="🕐"
                                                FontSize="12" />
-                                        <Label Text="{Binding StartTimeDisplay, StringFormat='Started {0}'}"
+                                        <Label Text="{Binding Stream.StartTimeDisplay, StringFormat='Started {0}'}"
                                                Style="{StaticResource StreamMeta}" />
                                     </HorizontalStackLayout>
                                 </VerticalStackLayout>
 
+                                <!-- Favorite Button -->
+                                <Border Grid.Column="2"
+                                        BackgroundColor="{StaticResource BgTertiary}"
+                                        Stroke="{StaticResource BorderPrimary}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 10"
+                                        WidthRequest="44"
+                                        HeightRequest="44"
+                                        VerticalOptions="Center">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:MainViewModel}}, Path=ToggleFavoriteCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="{Binding FavoriteIcon}"
+                                           FontSize="18"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+
                                 <!-- Viewer Count -->
-                                <Frame Grid.Column="2"
+                                <Frame Grid.Column="3"
                                        Style="{StaticResource ViewerBadge}"
                                        VerticalOptions="Center">
                                     <HorizontalStackLayout Spacing="8">
@@ -252,7 +288,7 @@
                                                FontSize="14"
                                                TextColor="{StaticResource AccentRed}" />
                                         <VerticalStackLayout>
-                                            <Label Text="{Binding ViewerCountDisplay}"
+                                            <Label Text="{Binding Stream.ViewerCountDisplay}"
                                                    Style="{StaticResource ViewerCount}" />
                                             <Label Text="viewers"
                                                    Style="{StaticResource ViewerLabel}" />

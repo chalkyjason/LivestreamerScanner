@@ -28,13 +28,16 @@ public static class MauiProgram
         builder.Services.AddSingleton<HttpClient>();
         builder.Services.AddSingleton<IYouTubeService>(sp =>
             new YouTubeService(sp.GetRequiredService<HttpClient>(), apiKey));
+        builder.Services.AddSingleton<IFavoritesService, FavoritesService>();
 
         // Register ViewModels
         builder.Services.AddSingleton<MainViewModel>();
+        builder.Services.AddTransient<FavoritesViewModel>();
 
         // Register Views
         builder.Services.AddSingleton<MainPage>();
         builder.Services.AddTransient<SettingsPage>();
+        builder.Services.AddTransient<FavoritesPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

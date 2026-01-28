@@ -9,6 +9,7 @@ namespace StreamScanner.Maui.ViewModels;
 public partial class MainViewModel : ObservableObject
 {
     private readonly IYouTubeService _youTubeService;
+    private readonly IFavoritesService _favoritesService;
     private CancellationTokenSource? _autoRefreshCts;
     private CancellationTokenSource? _scanCts;
     private bool _isAutoRefreshing;
@@ -40,7 +41,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _showNoResults;
 
-    public ObservableCollection<LiveStream> Streams { get; } = new();
+    public ObservableCollection<LiveStreamItem> Streams { get; } = new();
 
     public List<int> MaxResultsOptions { get; } = new() { 10, 25, 50 };
     public List<RefreshOption> RefreshOptions { get; } = new()
@@ -52,9 +53,10 @@ public partial class MainViewModel : ObservableObject
         new RefreshOption(60, "60s")
     };
 
-    public MainViewModel(IYouTubeService youTubeService)
+    public MainViewModel(IYouTubeService youTubeService, IFavoritesService favoritesService)
     {
         _youTubeService = youTubeService;
+        _favoritesService = favoritesService;
     }
 
     [RelayCommand]
@@ -93,7 +95,8 @@ public partial class MainViewModel : ObservableObject
             Streams.Clear();
             foreach (var stream in results)
             {
-                Streams.Add(stream);
+                var item = new LiveStreamItem(stream, _favoritesService.IsFavorite(stream.ChannelTitle));
+                Streams.Add(item);
             }
 
             HasResults = Streams.Count > 0;
@@ -133,13 +136,13 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task OpenStreamAsync(LiveStream? stream)
+    private async Task OpenStreamAsync(LiveStreamItem? item)
     {
-        if (stream == null) return;
+        if (item?.Stream == null) return;
 
         try
         {
-            await Launcher.OpenAsync(new Uri(stream.Url));
+            await Launcher.OpenAsync(new Uri(item.Stream.Url));
         }
         catch (Exception ex)
         {
@@ -153,6 +156,28 @@ public partial class MainViewModel : ObservableObject
         _scanCts?.Cancel();
         StopAutoRefresh();
         SetStatus("Scan stopped", "default");
+    }
+
+    [RelayCommand]
+    private void ToggleFavorite(LiveStreamItem? item)
+    {
+        if (item?.Stream == null) return;
+
+        var channelId = item.Stream.ChannelTitle; // Using channel title as ID since we don't have channel ID
+        var channelTitle = item.Stream.ChannelTitle;
+
+        if (item.IsFavorite)
+        {
+            _favoritesService.RemoveFavorite(channelId);
+            item.IsFavorite = false;
+            SetStatus($"Removed {channelTitle} from favorites", "default");
+        }
+        else
+        {
+            _favoritesService.AddFavorite(channelId, channelTitle);
+            item.IsFavorite = true;
+            SetStatus($"Added {channelTitle} to favorites", "success");
+        }
     }
 
     [RelayCommand]
@@ -212,3 +237,27 @@ public partial class MainViewModel : ObservableObject
 }
 
 public record RefreshOption(int Seconds, string Display);
+
+/// <summary>
+/// Wrapper class for LiveStream with favorite status
+/// </summary>
+public partial class LiveStreamItem : ObservableObject
+{
+    public LiveStream Stream { get; }
+
+    [ObservableProperty]
+    private bool _isFavorite;
+
+    public string FavoriteIcon => IsFavorite ? "❤️" : "🤍";
+
+    public LiveStreamItem(LiveStream stream, bool isFavorite)
+    {
+        Stream = stream;
+        _isFavorite = isFavorite;
+    }
+
+    partial void OnIsFavoriteChanged(bool value)
+    {
+        OnPropertyChanged(nameof(FavoriteIcon));
+    }
+}

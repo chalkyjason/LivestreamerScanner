@@ -14,4 +14,9 @@ public partial class MainPage : ContentPage
     {
         await Shell.Current.GoToAsync(nameof(SettingsPage));
     }
+
+    private async void OnFavoritesTapped(object? sender, TappedEventArgs e)
+    {
+        await Shell.Current.GoToAsync(nameof(FavoritesPage));
+    }
 }
