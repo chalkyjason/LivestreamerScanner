@@ -10,6 +10,7 @@ public partial class MainViewModel : ObservableObject
 {
     private readonly IYouTubeService _youTubeService;
     private readonly IFavoritesService _favoritesService;
+    private readonly IBlockedChannelsService _blockedChannelsService;
     private CancellationTokenSource? _autoRefreshCts;
     private CancellationTokenSource? _scanCts;
     private bool _isAutoRefreshing;
@@ -22,6 +23,12 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private int _selectedRefreshInterval = 20;
+
+    [ObservableProperty]
+    private int _minViewers;
+
+    [ObservableProperty]
+    private int _maxViewers;
 
     [ObservableProperty]
     private bool _isScanning;
@@ -41,7 +48,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _showNoResults;
 
+    [ObservableProperty]
+    private bool _hasBlockedChannels;
+
     public ObservableCollection<LiveStreamItem> Streams { get; } = new();
+    public ObservableCollection<string> BlockedChannels { get; } = new();
 
     public List<int> MaxResultsOptions { get; } = new() { 10, 25, 50 };
     public List<RefreshOption> RefreshOptions { get; } = new()
@@ -53,10 +64,24 @@ public partial class MainViewModel : ObservableObject
         new RefreshOption(60, "60s")
     };
 
-    public MainViewModel(IYouTubeService youTubeService, IFavoritesService favoritesService)
+    public MainViewModel(IYouTubeService youTubeService, IFavoritesService favoritesService, IBlockedChannelsService blockedChannelsService)
     {
         _youTubeService = youTubeService;
         _favoritesService = favoritesService;
+        _blockedChannelsService = blockedChannelsService;
+
+        _blockedChannelsService.BlockListChanged += RefreshBlockedList;
+        RefreshBlockedList();
+    }
+
+    private void RefreshBlockedList()
+    {
+        BlockedChannels.Clear();
+        foreach (var ch in _blockedChannelsService.GetBlockedChannels())
+        {
+            BlockedChannels.Add(ch);
+        }
+        HasBlockedChannels = BlockedChannels.Count > 0;
     }
 
     [RelayCommand]
@@ -84,7 +109,14 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var results = await _youTubeService.SearchLiveStreamsAsync(Keywords, SelectedMaxResults, token);
+            var filters = new SearchFilters
+            {
+                MinViewers = MinViewers,
+                MaxViewers = MaxViewers,
+                BlockedChannels = _blockedChannelsService.GetBlockedChannels()
+            };
+
+            var results = await _youTubeService.SearchLiveStreamsAsync(Keywords, SelectedMaxResults, filters, token);
 
             if (token.IsCancellationRequested)
             {
@@ -178,6 +210,42 @@ public partial class MainViewModel : ObservableObject
             item.IsFavorite = true;
             SetStatus($"Added {channelTitle} to favorites", "success");
         }
+    }
+
+    [RelayCommand]
+    private void BlockChannel(LiveStreamItem? item)
+    {
+        if (item?.Stream == null) return;
+
+        var channelTitle = item.Stream.ChannelTitle;
+        _blockedChannelsService.BlockChannel(channelTitle);
+
+        // Remove all streams from this channel from the current results
+        var toRemove = Streams.Where(s =>
+            string.Equals(s.Stream.ChannelTitle, channelTitle, StringComparison.OrdinalIgnoreCase)).ToList();
+        foreach (var s in toRemove)
+        {
+            Streams.Remove(s);
+        }
+
+        HasResults = Streams.Count > 0;
+        ShowNoResults = !HasResults && !ShowEmptyState;
+        SetStatus($"Blocked {channelTitle}", "default");
+    }
+
+    [RelayCommand]
+    private void UnblockChannel(string? channelTitle)
+    {
+        if (string.IsNullOrEmpty(channelTitle)) return;
+        _blockedChannelsService.UnblockChannel(channelTitle);
+        SetStatus($"Unblocked {channelTitle}", "default");
+    }
+
+    [RelayCommand]
+    private void ClearBlockedChannels()
+    {
+        _blockedChannelsService.ClearAll();
+        SetStatus("Cleared all blocked channels", "default");
     }
 
     [RelayCommand]

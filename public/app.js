@@ -2,12 +2,86 @@ const $ = (id) => document.getElementById(id);
 
 const keywordsEl = $("keywords");
 const maxEl = $("max");
+const minViewersEl = $("minViewers");
+const maxViewersEl = $("maxViewers");
 const refreshEl = $("refreshSec");
 const scanBtn = $("scanBtn");
 const resultsEl = $("results");
 const statusEl = $("status");
+const blockedSection = $("blockedSection");
+const blockedList = $("blockedList");
+const clearBlockedBtn = $("clearBlockedBtn");
 
 let timer = null;
+
+// ── Blocked Channels (persisted in localStorage) ──
+
+function getBlockedChannels() {
+  try {
+    return JSON.parse(localStorage.getItem("blockedChannels") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveBlockedChannels(list) {
+  localStorage.setItem("blockedChannels", JSON.stringify(list));
+  renderBlockedChannels();
+}
+
+function blockChannel(channelTitle) {
+  const blocked = getBlockedChannels();
+  const normalized = channelTitle.trim();
+  if (!normalized) return;
+  if (blocked.some(b => b.toLowerCase() === normalized.toLowerCase())) return;
+  blocked.push(normalized);
+  saveBlockedChannels(blocked);
+}
+
+function unblockChannel(channelTitle) {
+  const blocked = getBlockedChannels().filter(
+    b => b.toLowerCase() !== channelTitle.toLowerCase()
+  );
+  saveBlockedChannels(blocked);
+}
+
+function clearAllBlocked() {
+  saveBlockedChannels([]);
+}
+
+function renderBlockedChannels() {
+  const blocked = getBlockedChannels();
+  if (blocked.length === 0) {
+    blockedSection.style.display = "none";
+    return;
+  }
+
+  blockedSection.style.display = "";
+  blockedList.textContent = "";
+
+  for (const name of blocked) {
+    const tag = document.createElement("span");
+    tag.className = "blocked-tag";
+
+    const text = document.createElement("span");
+    text.textContent = name;
+    tag.appendChild(text);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "blocked-tag-remove";
+    removeBtn.textContent = "\u00d7";
+    removeBtn.title = `Unblock ${name}`;
+    removeBtn.addEventListener("click", () => {
+      unblockChannel(name);
+      scanOnce(); // Re-scan to show the unblocked channel
+    });
+    tag.appendChild(removeBtn);
+
+    blockedList.appendChild(tag);
+  }
+}
+
+// ── Utility ──
 
 function setStatus(msg, type = "") {
   statusEl.textContent = msg;
@@ -44,6 +118,8 @@ function escapeHtml(s) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+// ── Rendering ──
 
 function renderEmptyState() {
   resultsEl.innerHTML = `
@@ -130,18 +206,45 @@ function render(results) {
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <span class="viewer-number">${hasViewers ? viewers : '—'}</span>
+          <span class="viewer-number">${hasViewers ? viewers : '\u2014'}</span>
           <span class="viewer-label">viewers</span>
         </div>
       </div>
     `;
+
+    // Block channel button
+    const blockBtn = document.createElement("button");
+    blockBtn.className = "block-btn";
+    blockBtn.title = `Block ${r.channelTitle}`;
+    blockBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+    </svg>`;
+    blockBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      blockChannel(r.channelTitle);
+      card.style.opacity = "0";
+      card.style.transform = "translateX(20px)";
+      card.style.transition = "all 0.3s ease";
+      setTimeout(() => card.remove(), 300);
+      setStatus(`Blocked ${r.channelTitle}`, "");
+    });
+
+    // Insert block button before the stats div
+    const statsDiv = card.querySelector(".stream-stats");
+    card.insertBefore(blockBtn, statsDiv);
+
     resultsEl.appendChild(card);
   }
 }
 
+// ── Scanning ──
+
 async function scanOnce() {
   const q = keywordsEl.value.trim();
   const max = maxEl.value;
+  const minV = parseInt(minViewersEl.value, 10) || 0;
+  const maxV = parseInt(maxViewersEl.value, 10) || 0;
 
   if (!q) {
     setStatus("Enter at least 1 keyword", "error");
@@ -152,18 +255,29 @@ async function scanOnce() {
   scanBtn.disabled = true;
 
   try {
-    const url = `/api/live?q=${encodeURIComponent(q)}&max=${encodeURIComponent(max)}`;
-    const res = await fetch(url);
+    const blocked = getBlockedChannels();
+    const params = new URLSearchParams({
+      q,
+      max,
+      minViewers: minV.toString(),
+      maxViewers: maxV.toString(),
+    });
+    if (blocked.length > 0) {
+      params.set("blocked", blocked.join(","));
+    }
+
+    const res = await fetch(`/api/live?${params}`);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Request failed");
 
     render(data.results);
 
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const filterNote = data.filtered > 0 ? ` (${data.filtered} filtered)` : "";
     if (data.results.length > 0) {
-      setStatus(`${data.results.length} live streams found - Updated ${time}`, "success");
+      setStatus(`${data.results.length} live streams found${filterNote} - Updated ${time}`, "success");
     } else {
-      setStatus(`No results - Updated ${time}`, "");
+      setStatus(`No results${filterNote} - Updated ${time}`, "");
     }
   } catch (e) {
     setStatus(`Error: ${e.message}`, "error");
@@ -184,13 +298,19 @@ function applyAutoRefresh() {
   }
 }
 
-// Event listeners
+// ── Event Listeners ──
+
 scanBtn.addEventListener("click", async () => {
   await scanOnce();
   applyAutoRefresh();
 });
 
 refreshEl.addEventListener("change", applyAutoRefresh);
+
+clearBlockedBtn.addEventListener("click", () => {
+  clearAllBlocked();
+  scanOnce();
+});
 
 // Allow Enter key to trigger scan
 keywordsEl.addEventListener("keydown", (e) => {
@@ -200,8 +320,8 @@ keywordsEl.addEventListener("keydown", (e) => {
   }
 });
 
-// Initialize with empty state
-renderEmptyState();
+// ── Initialize ──
 
-// Set default keywords
+renderEmptyState();
+renderBlockedChannels();
 keywordsEl.value = "gaming, music, news";

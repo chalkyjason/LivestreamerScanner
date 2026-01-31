@@ -54,6 +54,16 @@
           </label>
 
           <label class="select-label">
+            <span class="label-text">Min Viewers</span>
+            <input type="number" id="minViewers" class="number-input" placeholder="0" min="0" value="0" />
+          </label>
+
+          <label class="select-label">
+            <span class="label-text">Max Viewers</span>
+            <input type="number" id="maxViewers" class="number-input" placeholder="No limit" min="0" value="0" />
+          </label>
+
+          <label class="select-label">
             <span class="label-text">Auto-refresh</span>
             <select id="refreshSec" class="select-input">
               <option value="0">Off</option>
@@ -73,6 +83,22 @@
             <span>Scan Now</span>
           </button>
         </div>
+      </div>
+    </section>
+
+    <section id="blockedSection" class="blocked-section" style="display:none;">
+      <div class="blocked-container">
+        <div class="blocked-header">
+          <h3 class="blocked-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+            </svg>
+            Blocked Channels
+          </h3>
+          <button id="clearBlockedBtn" class="clear-blocked-btn">Clear All</button>
+        </div>
+        <div id="blockedList" class="blocked-list"></div>
       </div>
     </section>
 

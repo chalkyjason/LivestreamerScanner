@@ -33,6 +33,7 @@ public static class MauiProgram
                 sp.GetRequiredService<ICacheService>(),
                 apiKey));
         builder.Services.AddSingleton<IFavoritesService, FavoritesService>();
+        builder.Services.AddSingleton<IBlockedChannelsService, BlockedChannelsService>();
 
         // Register ViewModels
         builder.Services.AddSingleton<MainViewModel>();

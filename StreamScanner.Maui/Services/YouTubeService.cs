@@ -19,7 +19,12 @@ public class YouTubeService : IYouTubeService
         _apiKey = apiKey;
     }
 
-    public async Task<List<LiveStream>> SearchLiveStreamsAsync(string keywords, int maxResults, CancellationToken cancellationToken = default)
+    public Task<List<LiveStream>> SearchLiveStreamsAsync(string keywords, int maxResults, CancellationToken cancellationToken = default)
+    {
+        return SearchLiveStreamsAsync(keywords, maxResults, null, cancellationToken);
+    }
+
+    public async Task<List<LiveStream>> SearchLiveStreamsAsync(string keywords, int maxResults, SearchFilters? filters, CancellationToken cancellationToken = default)
     {
         if (!IsConfigured)
         {
@@ -28,7 +33,10 @@ public class YouTubeService : IYouTubeService
 
         // Build optimized query
         var query = BuildOptimizedQuery(keywords);
-        var cacheKey = $"search:{query}:{maxResults}";
+        var blockedKey = filters?.BlockedChannels != null
+            ? string.Join(",", filters.BlockedChannels.OrderBy(b => b))
+            : "";
+        var cacheKey = $"search:{query}:{maxResults}:{filters?.MinViewers ?? 0}:{filters?.MaxViewers ?? 0}:{blockedKey}";
 
         // Check cache first
         var cached = await _cacheService.GetCachedSearchAsync(cacheKey);
@@ -43,13 +51,17 @@ public class YouTubeService : IYouTubeService
             throw new InvalidOperationException("Rate limit reached. Please wait a moment before searching again.");
         }
 
+        // Fetch extra results to account for filtering
+        var blockedCount = filters?.BlockedChannels?.Count ?? 0;
+        var fetchMax = Math.Min(maxResults + blockedCount * 2 + 10, 50);
+
         // Step 1: Search for live videos with optimized parameters
         var searchUrl = $"{BaseUrl}/search" +
             $"?part=snippet" +
             $"&type=video" +
             $"&eventType=live" +
-            $"&maxResults={maxResults}" +
-            $"&order=viewCount" +  // Sort by view count for better results
+            $"&maxResults={fetchMax}" +
+            $"&order=viewCount" +
             $"&safeSearch=none" +
             $"&q={Uri.EscapeDataString(query)}" +
             $"&key={Uri.EscapeDataString(_apiKey)}";
@@ -59,7 +71,6 @@ public class YouTubeService : IYouTubeService
 
         if (searchResponse?.Items == null || searchResponse.Items.Count == 0)
         {
-            // Cache empty results for a shorter time
             await _cacheService.SetCachedSearchAsync(cacheKey, new List<LiveStream>(), TimeSpan.FromSeconds(15));
             return new List<LiveStream>();
         }
@@ -76,7 +87,6 @@ public class YouTubeService : IYouTubeService
         }
 
         // Step 2: Get video details including live streaming details
-        // Batch video IDs to reduce API calls (max 50 per request)
         var videosUrl = $"{BaseUrl}/videos" +
             $"?part=snippet,liveStreamingDetails" +
             $"&id={Uri.EscapeDataString(string.Join(",", videoIds))}" +
@@ -113,6 +123,32 @@ public class YouTubeService : IYouTubeService
             };
         }).ToList();
 
+        // Apply filters
+        if (filters != null)
+        {
+            // Remove blocked channels
+            if (filters.BlockedChannels.Count > 0)
+            {
+                streams.RemoveAll(s =>
+                    filters.BlockedChannels.Any(b =>
+                        string.Equals(b, s.ChannelTitle, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            // Apply min viewer filter
+            if (filters.MinViewers > 0)
+            {
+                streams.RemoveAll(s =>
+                    !s.ConcurrentViewers.HasValue || s.ConcurrentViewers.Value < filters.MinViewers);
+            }
+
+            // Apply max viewer filter
+            if (filters.MaxViewers > 0)
+            {
+                streams.RemoveAll(s =>
+                    !s.ConcurrentViewers.HasValue || s.ConcurrentViewers.Value > filters.MaxViewers);
+            }
+        }
+
         // Sort by viewer count (descending), nulls last
         streams.Sort((a, b) =>
         {
@@ -120,6 +156,12 @@ public class YouTubeService : IYouTubeService
             var bv = b.ConcurrentViewers ?? -1;
             return bv.CompareTo(av);
         });
+
+        // Trim to requested max
+        if (streams.Count > maxResults)
+        {
+            streams = streams.Take(maxResults).ToList();
+        }
 
         // Cache results
         await _cacheService.SetCachedSearchAsync(cacheKey, streams, TimeSpan.FromSeconds(30));

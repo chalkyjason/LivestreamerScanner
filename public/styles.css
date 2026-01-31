@@ -316,6 +316,40 @@ body {
   box-shadow: 0 0 0 3px var(--accent-red-glow);
 }
 
+.number-input {
+  height: 48px;
+  width: 110px;
+  padding: 0 var(--spacing-md);
+  font-size: 0.9375rem;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: all var(--transition-fast);
+  -moz-appearance: textfield;
+}
+
+.number-input::-webkit-outer-spin-button,
+.number-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.number-input::placeholder {
+  color: var(--text-muted);
+}
+
+.number-input:hover {
+  border-color: var(--border-secondary);
+}
+
+.number-input:focus {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 0 3px var(--accent-red-glow);
+}
+
 .scan-button {
   height: 48px;
   padding: 0 var(--spacing-lg);
@@ -424,7 +458,7 @@ body {
 
 .stream-card {
   display: grid;
-  grid-template-columns: 200px 1fr auto;
+  grid-template-columns: 200px 1fr auto auto;
   gap: var(--spacing-lg);
   padding: var(--spacing-md);
   background: var(--bg-card);
@@ -578,6 +612,131 @@ body {
 
 .viewer-count.no-data svg {
   color: var(--text-muted);
+}
+
+/* ========================================
+   Block Button (on stream cards)
+   ======================================== */
+
+.block-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.block-btn:hover {
+  background: rgba(255, 0, 80, 0.15);
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.block-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ========================================
+   Blocked Channels Section
+   ======================================== */
+
+.blocked-section {
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.blocked-container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.blocked-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+}
+
+.blocked-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.blocked-title svg {
+  color: var(--accent-red);
+}
+
+.clear-blocked-btn {
+  font-size: 0.75rem;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.clear-blocked-btn:hover {
+  color: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
+.blocked-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.blocked-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  animation: fadeIn var(--transition-fast);
+}
+
+.blocked-tag-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  transition: all var(--transition-fast);
+}
+
+.blocked-tag-remove:hover {
+  background: rgba(255, 0, 80, 0.2);
+  color: var(--accent-red);
 }
 
 /* ========================================
