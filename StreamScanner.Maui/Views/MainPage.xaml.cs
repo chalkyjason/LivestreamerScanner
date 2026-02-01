@@ -19,4 +19,13 @@ public partial class MainPage : ContentPage
     {
         await Shell.Current.GoToAsync(nameof(FavoritesPage));
     }
+
+    private async void OnSavePresetClicked(object? sender, EventArgs e)
+    {
+        var name = await DisplayPromptAsync("Save Preset", "Enter a name for this preset:", "Save", "Cancel", "Preset name");
+        if (!string.IsNullOrWhiteSpace(name) && BindingContext is MainViewModel vm)
+        {
+            vm.SavePresetCommand.Execute(name);
+        }
+    }
 }

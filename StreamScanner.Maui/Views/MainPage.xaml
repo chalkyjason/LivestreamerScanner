@@ -8,7 +8,7 @@
              x:DataType="viewmodels:MainViewModel"
              BackgroundColor="{StaticResource BgPrimary}">
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
 
         <!-- Header -->
         <Grid Grid.Row="0"
@@ -26,7 +26,7 @@
                         StrokeShape="RoundRectangle 10"
                         WidthRequest="44"
                         HeightRequest="44">
-                    <Label Text="▶"
+                    <Label Text="&#9654;"
                            TextColor="White"
                            FontSize="20"
                            HorizontalOptions="Center"
@@ -40,8 +40,28 @@
                 </VerticalStackLayout>
             </HorizontalStackLayout>
 
-            <!-- Status Badge and Buttons -->
+            <!-- Status + Quota + Buttons -->
             <HorizontalStackLayout Grid.Column="1" Spacing="12" VerticalOptions="Center">
+                <!-- Quota Badge -->
+                <Border BackgroundColor="{StaticResource BgTertiary}"
+                        Stroke="{StaticResource BorderPrimary}"
+                        StrokeThickness="1"
+                        StrokeShape="RoundRectangle 8"
+                        Padding="10,6">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Quota"
+                               TextColor="{StaticResource TextMuted}"
+                               FontSize="10" />
+                        <ProgressBar Progress="{Binding QuotaPercent, Converter={StaticResource PercentToProgressConverter}}"
+                                     ProgressColor="{StaticResource AccentBlue}"
+                                     HeightRequest="4"
+                                     WidthRequest="80" />
+                        <Label Text="{Binding QuotaDisplay}"
+                               TextColor="{StaticResource TextSecondary}"
+                               FontSize="10" />
+                    </VerticalStackLayout>
+                </Border>
+
                 <Frame Style="{StaticResource StatusBadge}">
                     <Label Text="{Binding StatusMessage}"
                            TextColor="{StaticResource TextSecondary}"
@@ -58,7 +78,7 @@
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnFavoritesTapped" />
                     </Border.GestureRecognizers>
-                    <Label Text="❤️"
+                    <Label Text="&#x2764;"
                            FontSize="18"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
@@ -74,7 +94,7 @@
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnSettingsTapped" />
                     </Border.GestureRecognizers>
-                    <Label Text="⚙️"
+                    <Label Text="&#x2699;"
                            FontSize="18"
                            HorizontalOptions="Center"
                            VerticalOptions="Center" />
@@ -82,91 +102,205 @@
             </HorizontalStackLayout>
         </Grid>
 
-        <!-- Controls Section -->
+        <!-- Tab Bar -->
         <Grid Grid.Row="1"
               BackgroundColor="{StaticResource BgSecondary}"
-              Padding="20,16">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
+              Padding="20,0,20,0"
+              ColumnDefinitions="*,*">
+            <Button Grid.Column="0"
+                    Text="Live Now"
+                    Command="{Binding SwitchToLiveCommand}"
+                    BackgroundColor="{Binding IsLiveTab, Converter={StaticResource BoolToTabColorConverter}}"
+                    TextColor="{Binding IsLiveTab, Converter={StaticResource BoolToTabTextColorConverter}}"
+                    CornerRadius="8"
+                    HeightRequest="40"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    Margin="0,0,4,8" />
+            <Button Grid.Column="1"
+                    Text="Upcoming"
+                    Command="{Binding SwitchToUpcomingCommand}"
+                    BackgroundColor="{Binding IsUpcomingTab, Converter={StaticResource BoolToTabColorConverter}}"
+                    TextColor="{Binding IsUpcomingTab, Converter={StaticResource BoolToTabTextColorConverter}}"
+                    CornerRadius="8"
+                    HeightRequest="40"
+                    FontSize="14"
+                    FontAttributes="Bold"
+                    Margin="4,0,0,8" />
+        </Grid>
 
-            <!-- Search Input -->
-            <Border Grid.Row="0"
-                    Style="{StaticResource InputBorder}"
-                    Margin="0,0,0,12">
-                <Entry Text="{Binding Keywords}"
-                       Placeholder="Enter keywords (comma-separated)"
-                       Style="{StaticResource SearchEntry}"
-                       ReturnCommand="{Binding ScanCommand}"
-                       VerticalOptions="Center" />
-            </Border>
+        <!-- Controls Section -->
+        <ScrollView Grid.Row="2" Orientation="Vertical" HeightRequest="260">
+            <Grid BackgroundColor="{StaticResource BgSecondary}"
+                  Padding="20,12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-            <!-- Options Row 1: Results, Min/Max Viewers -->
-            <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*,Auto" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
-
-                <!-- Max Results Picker -->
-                <VerticalStackLayout Grid.Column="0" Grid.Row="0" Spacing="6">
-                    <Label Text="RESULTS" Style="{StaticResource LabelText}" />
-                    <Border Style="{StaticResource InputBorder}">
-                        <Picker ItemsSource="{Binding MaxResultsOptions}"
-                                SelectedItem="{Binding SelectedMaxResults}"
-                                Style="{StaticResource OptionPicker}"
-                                VerticalOptions="Center" />
-                    </Border>
-                </VerticalStackLayout>
-
-                <!-- Min Viewers -->
-                <VerticalStackLayout Grid.Column="1" Grid.Row="0" Spacing="6">
-                    <Label Text="MIN VIEWERS" Style="{StaticResource LabelText}" />
-                    <Border Style="{StaticResource InputBorder}">
-                        <Entry Text="{Binding MinViewers}"
-                               Placeholder="0"
-                               Keyboard="Numeric"
+                <!-- Row 0: Search + Presets -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8" Margin="0,0,0,10">
+                    <Border Grid.Column="0" Style="{StaticResource InputBorder}">
+                        <Entry Text="{Binding Keywords}"
+                               Placeholder="Enter keywords (comma-separated)"
                                Style="{StaticResource SearchEntry}"
-                               VerticalOptions="Center"
-                               WidthRequest="90" />
+                               ReturnCommand="{Binding ScanCommand}"
+                               VerticalOptions="Center" />
                     </Border>
-                </VerticalStackLayout>
-
-                <!-- Max Viewers -->
-                <VerticalStackLayout Grid.Column="2" Grid.Row="0" Spacing="6">
-                    <Label Text="MAX VIEWERS" Style="{StaticResource LabelText}" />
-                    <Border Style="{StaticResource InputBorder}">
-                        <Entry Text="{Binding MaxViewers}"
-                               Placeholder="No limit"
-                               Keyboard="Numeric"
-                               Style="{StaticResource SearchEntry}"
-                               VerticalOptions="Center"
-                               WidthRequest="90" />
-                    </Border>
-                </VerticalStackLayout>
-
-                <!-- Refresh Interval Picker -->
-                <VerticalStackLayout Grid.Column="3" Grid.Row="0" Spacing="6">
-                    <Label Text="AUTO-REFRESH" Style="{StaticResource LabelText}" />
-                    <Border Style="{StaticResource InputBorder}">
-                        <Picker ItemsSource="{Binding RefreshOptions}"
-                                ItemDisplayBinding="{Binding Display}"
-                                SelectedItem="{Binding SelectedRefreshInterval, Converter={StaticResource RefreshOptionConverter}}"
+                    <Border Grid.Column="1" Style="{StaticResource InputBorder}" WidthRequest="120">
+                        <Picker ItemsSource="{Binding PresetNames}"
+                                SelectedItem="{Binding SelectedPreset}"
+                                Title="Presets..."
                                 Style="{StaticResource OptionPicker}"
                                 VerticalOptions="Center">
                             <Picker.Behaviors>
                                 <toolkit:EventToCommandBehavior
                                     EventName="SelectedIndexChanged"
-                                    Command="{Binding StopAutoRefreshCommand}" />
+                                    Command="{Binding LoadPresetCommand}"
+                                    CommandParameter="{Binding SelectedPreset}" />
                             </Picker.Behaviors>
                         </Picker>
                     </Border>
-                </VerticalStackLayout>
+                    <Button Grid.Column="2"
+                            Text="Save"
+                            Clicked="OnSavePresetClicked"
+                            BackgroundColor="{StaticResource BgTertiary}"
+                            TextColor="{StaticResource TextPrimary}"
+                            BorderColor="{StaticResource BorderPrimary}"
+                            BorderWidth="1"
+                            CornerRadius="8"
+                            HeightRequest="44"
+                            FontSize="13"
+                            Padding="12,0" />
+                    <Button Grid.Column="3"
+                            Text="Del"
+                            Command="{Binding DeletePresetCommand}"
+                            CommandParameter="{Binding SelectedPreset}"
+                            BackgroundColor="{StaticResource BgTertiary}"
+                            TextColor="{StaticResource AccentRed}"
+                            BorderColor="{StaticResource BorderPrimary}"
+                            BorderWidth="1"
+                            CornerRadius="8"
+                            HeightRequest="44"
+                            FontSize="13"
+                            Padding="12,0" />
+                </Grid>
 
-                <!-- Scan/Stop Buttons -->
-                <HorizontalStackLayout Grid.Column="4" Grid.Row="0" Spacing="8" VerticalOptions="End">
-                    <Button Text="Scan Now"
+                <!-- Row 1: Filters row 1 (Results, Sort, Region, Language) -->
+                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="RESULTS" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Picker ItemsSource="{Binding MaxResultsOptions}"
+                                    SelectedItem="{Binding SelectedMaxResults}"
+                                    Style="{StaticResource OptionPicker}"
+                                    VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                        <Label Text="SORT" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}" WidthRequest="120">
+                            <Picker ItemsSource="{Binding SortOptions}"
+                                    ItemDisplayBinding="{Binding Display}"
+                                    Style="{StaticResource OptionPicker}"
+                                    VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="2" Spacing="4">
+                        <Label Text="REGION" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}" WidthRequest="100">
+                            <Picker ItemsSource="{Binding RegionOptions}"
+                                    ItemDisplayBinding="{Binding Display}"
+                                    Style="{StaticResource OptionPicker}"
+                                    VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="3" Spacing="4">
+                        <Label Text="LANGUAGE" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}" WidthRequest="100">
+                            <Picker ItemsSource="{Binding LanguageOptions}"
+                                    ItemDisplayBinding="{Binding Display}"
+                                    Style="{StaticResource OptionPicker}"
+                                    VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Row 2: Filters row 2 (Category, Safe Search, Min/Max Viewers) -->
+                <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="CATEGORY" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}" WidthRequest="110">
+                            <Picker ItemsSource="{Binding TopicOptions}"
+                                    ItemDisplayBinding="{Binding Display}"
+                                    Style="{StaticResource OptionPicker}"
+                                    VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                        <Label Text="SAFE SEARCH" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}" WidthRequest="100">
+                            <Picker ItemsSource="{Binding SafeSearchOptions}"
+                                    ItemDisplayBinding="{Binding Display}"
+                                    Style="{StaticResource OptionPicker}"
+                                    VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="2" Spacing="4">
+                        <Label Text="MIN VIEWERS" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Entry Text="{Binding MinViewers}"
+                                   Placeholder="0"
+                                   Keyboard="Numeric"
+                                   Style="{StaticResource SearchEntry}"
+                                   VerticalOptions="Center"
+                                   WidthRequest="80" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Grid.Column="3" Spacing="4">
+                        <Label Text="MAX VIEWERS" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Entry Text="{Binding MaxViewers}"
+                                   Placeholder="No limit"
+                                   Keyboard="Numeric"
+                                   Style="{StaticResource SearchEntry}"
+                                   VerticalOptions="Center"
+                                   WidthRequest="80" />
+                        </Border>
+                    </VerticalStackLayout>
+                </Grid>
+
+                <!-- Row 3: Refresh + Scan/Stop -->
+                <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="AUTO-REFRESH" Style="{StaticResource LabelText}" />
+                        <Border Style="{StaticResource InputBorder}">
+                            <Picker ItemsSource="{Binding RefreshOptions}"
+                                    ItemDisplayBinding="{Binding Display}"
+                                    SelectedItem="{Binding SelectedRefreshInterval, Converter={StaticResource RefreshOptionConverter}}"
+                                    Style="{StaticResource OptionPicker}"
+                                    VerticalOptions="Center" />
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <BoxView Grid.Column="1" />
+
+                    <Button Grid.Column="2"
+                            Text="Scan Now"
                             Command="{Binding ScanCommand}"
                             IsEnabled="{Binding IsScanning, Converter={toolkit:InvertedBoolConverter}}"
                             Style="{StaticResource PrimaryButton}" />
-                    <Button Text="Stop"
+                    <Button Grid.Column="3"
+                            Text="Stop"
                             Command="{Binding StopScanCommand}"
                             IsEnabled="{Binding IsScanning}"
                             BackgroundColor="{StaticResource BgTertiary}"
@@ -176,10 +310,10 @@
                             CornerRadius="10"
                             HeightRequest="44"
                             WidthRequest="80" />
-                </HorizontalStackLayout>
+                </Grid>
 
-                <!-- Blocked Channels Bar -->
-                <Grid Grid.Row="1" Grid.ColumnSpan="5"
+                <!-- Row 4: Blocked Channels Bar -->
+                <Grid Grid.Row="4"
                       IsVisible="{Binding HasBlockedChannels}"
                       ColumnDefinitions="Auto,*,Auto"
                       ColumnSpacing="8">
@@ -232,23 +366,23 @@
                             Padding="8,0" />
                 </Grid>
             </Grid>
-        </Grid>
+        </ScrollView>
 
         <!-- Results Area -->
-        <Grid Grid.Row="2" Padding="20,16">
+        <Grid Grid.Row="3" Padding="20,16">
 
             <!-- Empty State -->
             <VerticalStackLayout IsVisible="{Binding ShowEmptyState}"
                                  VerticalOptions="Center"
                                  HorizontalOptions="Center"
                                  Spacing="12">
-                <Label Text="📺"
+                <Label Text="&#x1F4FA;"
                        FontSize="60"
                        HorizontalOptions="Center"
                        Opacity="0.5" />
                 <Label Text="Ready to Scan"
                        Style="{StaticResource EmptyStateTitle}" />
-                <Label Text="Enter keywords and click &quot;Scan Now&quot; to discover live streams"
+                <Label Text="Enter keywords and tap Scan Now to discover live streams"
                        Style="{StaticResource EmptyStateText}" />
             </VerticalStackLayout>
 
@@ -257,11 +391,11 @@
                                  VerticalOptions="Center"
                                  HorizontalOptions="Center"
                                  Spacing="12">
-                <Label Text="🔍"
+                <Label Text="&#x1F50D;"
                        FontSize="60"
                        HorizontalOptions="Center"
                        Opacity="0.5" />
-                <Label Text="No Live Streams Found"
+                <Label Text="No Streams Found"
                        Style="{StaticResource EmptyStateTitle}" />
                 <Label Text="Try different keywords or check back later"
                        Style="{StaticResource EmptyStateText}" />
@@ -290,7 +424,7 @@
                                     CommandParameter="{Binding .}" />
                             </Frame.GestureRecognizers>
 
-                            <Grid ColumnDefinitions="160,*,Auto,Auto,Auto" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="160,*,Auto,Auto,Auto,Auto" ColumnSpacing="12">
 
                                 <!-- Thumbnail -->
                                 <Grid Grid.Column="0">
@@ -305,7 +439,8 @@
                                     <Frame Style="{StaticResource LiveBadge}"
                                            HorizontalOptions="Start"
                                            VerticalOptions="Start"
-                                           Margin="8">
+                                           Margin="8"
+                                           IsVisible="{Binding Stream.IsUpcoming, Converter={toolkit:InvertedBoolConverter}}">
                                         <HorizontalStackLayout Spacing="6">
                                             <Ellipse Fill="White"
                                                      WidthRequest="6"
@@ -317,6 +452,21 @@
                                                    CharacterSpacing="0.5" />
                                         </HorizontalStackLayout>
                                     </Frame>
+
+                                    <!-- Upcoming Badge -->
+                                    <Frame BackgroundColor="#7C3AED"
+                                           CornerRadius="4"
+                                           Padding="6,3"
+                                           HasShadow="False"
+                                           HorizontalOptions="Start"
+                                           VerticalOptions="Start"
+                                           Margin="8"
+                                           IsVisible="{Binding Stream.IsUpcoming}">
+                                        <Label Text="UPCOMING"
+                                               TextColor="White"
+                                               FontSize="10"
+                                               FontAttributes="Bold" />
+                                    </Frame>
                                 </Grid>
 
                                 <!-- Stream Info -->
@@ -326,27 +476,51 @@
                                     <Label Text="{Binding Stream.Title}"
                                            Style="{StaticResource StreamTitle}" />
                                     <HorizontalStackLayout Spacing="6">
-                                        <Label Text="👤"
+                                        <Label Text="&#x1F464;"
                                                FontSize="12" />
                                         <Label Text="{Binding Stream.ChannelTitle}"
                                                Style="{StaticResource StreamMeta}" />
                                     </HorizontalStackLayout>
                                     <HorizontalStackLayout Spacing="6">
-                                        <Label Text="🕐"
+                                        <Label Text="&#x1F550;"
                                                FontSize="12" />
                                         <Label Text="{Binding Stream.StartTimeDisplay, StringFormat='Started {0}'}"
-                                               Style="{StaticResource StreamMeta}" />
+                                               Style="{StaticResource StreamMeta}"
+                                               IsVisible="{Binding Stream.IsUpcoming, Converter={toolkit:InvertedBoolConverter}}" />
+                                        <Label Text="{Binding Stream.ScheduledTimeDisplay}"
+                                               Style="{StaticResource StreamMeta}"
+                                               IsVisible="{Binding Stream.IsUpcoming}" />
                                     </HorizontalStackLayout>
                                 </VerticalStackLayout>
 
-                                <!-- Favorite Button -->
+                                <!-- Copy Link Button -->
                                 <Border Grid.Column="2"
                                         BackgroundColor="{StaticResource BgTertiary}"
                                         Stroke="{StaticResource BorderPrimary}"
                                         StrokeThickness="1"
                                         StrokeShape="RoundRectangle 10"
-                                        WidthRequest="44"
-                                        HeightRequest="44"
+                                        WidthRequest="40"
+                                        HeightRequest="40"
+                                        VerticalOptions="Center">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:MainViewModel}}, Path=CopyLinkCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Label Text="&#x1F4CB;"
+                                           FontSize="14"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center" />
+                                </Border>
+
+                                <!-- Favorite Button -->
+                                <Border Grid.Column="3"
+                                        BackgroundColor="{StaticResource BgTertiary}"
+                                        Stroke="{StaticResource BorderPrimary}"
+                                        StrokeThickness="1"
+                                        StrokeShape="RoundRectangle 10"
+                                        WidthRequest="40"
+                                        HeightRequest="40"
                                         VerticalOptions="Center">
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer
@@ -354,44 +528,57 @@
                                             CommandParameter="{Binding .}" />
                                     </Border.GestureRecognizers>
                                     <Label Text="{Binding FavoriteIcon}"
-                                           FontSize="18"
+                                           FontSize="16"
                                            HorizontalOptions="Center"
                                            VerticalOptions="Center" />
                                 </Border>
 
                                 <!-- Block Channel Button -->
-                                <Border Grid.Column="3"
+                                <Border Grid.Column="4"
                                         BackgroundColor="{StaticResource BgTertiary}"
                                         Stroke="{StaticResource BorderPrimary}"
                                         StrokeThickness="1"
                                         StrokeShape="RoundRectangle 10"
-                                        WidthRequest="44"
-                                        HeightRequest="44"
+                                        WidthRequest="40"
+                                        HeightRequest="40"
                                         VerticalOptions="Center">
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer
                                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:MainViewModel}}, Path=BlockChannelCommand}"
                                             CommandParameter="{Binding .}" />
                                     </Border.GestureRecognizers>
-                                    <Label Text="🚫"
-                                           FontSize="16"
+                                    <Label Text="&#x1F6AB;"
+                                           FontSize="14"
                                            HorizontalOptions="Center"
                                            VerticalOptions="Center" />
                                 </Border>
 
-                                <!-- Viewer Count -->
-                                <Frame Grid.Column="4"
+                                <!-- Viewer Count / Scheduled Time -->
+                                <Frame Grid.Column="5"
                                        Style="{StaticResource ViewerBadge}"
                                        VerticalOptions="Center">
                                     <HorizontalStackLayout Spacing="8">
-                                        <Label Text="👥"
+                                        <Label Text="&#x1F465;"
                                                FontSize="14"
-                                               TextColor="{StaticResource AccentRed}" />
+                                               TextColor="{StaticResource AccentRed}"
+                                               IsVisible="{Binding Stream.IsUpcoming, Converter={toolkit:InvertedBoolConverter}}" />
+                                        <Label Text="&#x1F4C5;"
+                                               FontSize="14"
+                                               TextColor="#7C3AED"
+                                               IsVisible="{Binding Stream.IsUpcoming}" />
                                         <VerticalStackLayout>
                                             <Label Text="{Binding Stream.ViewerCountDisplay}"
-                                                   Style="{StaticResource ViewerCount}" />
+                                                   Style="{StaticResource ViewerCount}"
+                                                   IsVisible="{Binding Stream.IsUpcoming, Converter={toolkit:InvertedBoolConverter}}" />
                                             <Label Text="viewers"
-                                                   Style="{StaticResource ViewerLabel}" />
+                                                   Style="{StaticResource ViewerLabel}"
+                                                   IsVisible="{Binding Stream.IsUpcoming, Converter={toolkit:InvertedBoolConverter}}" />
+                                            <Label Text="{Binding Stream.ScheduledTimeDisplay}"
+                                                   Style="{StaticResource ViewerCount}"
+                                                   IsVisible="{Binding Stream.IsUpcoming}" />
+                                            <Label Text="scheduled"
+                                                   Style="{StaticResource ViewerLabel}"
+                                                   IsVisible="{Binding Stream.IsUpcoming}" />
                                         </VerticalStackLayout>
                                     </HorizontalStackLayout>
                                 </Frame>
@@ -404,7 +591,7 @@
         </Grid>
 
         <!-- Footer -->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="4"
               BackgroundColor="{StaticResource BgSecondary}"
               Padding="20,16">
             <Label Text="Powered by YouTube Data API v3"

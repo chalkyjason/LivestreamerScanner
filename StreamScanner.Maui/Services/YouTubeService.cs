@@ -10,7 +10,15 @@ public class YouTubeService : IYouTubeService
     private readonly string _apiKey;
     private const string BaseUrl = "https://www.googleapis.com/youtube/v3";
 
+    private static readonly Dictionary<string, int> QuotaCosts = new()
+    {
+        ["search"] = 100,
+        ["videos"] = 1,
+        ["channels"] = 1
+    };
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(_apiKey) && _apiKey != "YOUR_API_KEY_HERE";
+    public int QuotaUsed { get; private set; }
 
     public YouTubeService(HttpClient httpClient, ICacheService cacheService, string apiKey)
     {
@@ -31,12 +39,16 @@ public class YouTubeService : IYouTubeService
             throw new InvalidOperationException("YouTube API key is not configured. Please add your API key in Settings.");
         }
 
+        var eventType = filters?.EventType ?? "live";
+        var order = filters?.SortOrder ?? "viewCount";
+        var safeSearch = filters?.SafeSearch ?? "none";
+
         // Build optimized query
         var query = BuildOptimizedQuery(keywords);
         var blockedKey = filters?.BlockedChannels != null
             ? string.Join(",", filters.BlockedChannels.OrderBy(b => b))
             : "";
-        var cacheKey = $"search:{query}:{maxResults}:{filters?.MinViewers ?? 0}:{filters?.MaxViewers ?? 0}:{blockedKey}";
+        var cacheKey = $"search:{query}:{maxResults}:{filters?.MinViewers ?? 0}:{filters?.MaxViewers ?? 0}:{blockedKey}:{filters?.Region}:{filters?.Language}:{filters?.TopicId}:{order}:{safeSearch}:{eventType}";
 
         // Check cache first
         var cached = await _cacheService.GetCachedSearchAsync(cacheKey);
@@ -55,18 +67,26 @@ public class YouTubeService : IYouTubeService
         var blockedCount = filters?.BlockedChannels?.Count ?? 0;
         var fetchMax = Math.Min(maxResults + blockedCount * 2 + 10, 50);
 
-        // Step 1: Search for live videos with optimized parameters
+        // Build search URL with all params
         var searchUrl = $"{BaseUrl}/search" +
             $"?part=snippet" +
             $"&type=video" +
-            $"&eventType=live" +
+            $"&eventType={Uri.EscapeDataString(eventType)}" +
             $"&maxResults={fetchMax}" +
-            $"&order=viewCount" +
-            $"&safeSearch=none" +
+            $"&order={Uri.EscapeDataString(order)}" +
+            $"&safeSearch={Uri.EscapeDataString(safeSearch)}" +
             $"&q={Uri.EscapeDataString(query)}" +
             $"&key={Uri.EscapeDataString(_apiKey)}";
 
+        if (!string.IsNullOrEmpty(filters?.Region))
+            searchUrl += $"&regionCode={Uri.EscapeDataString(filters.Region)}";
+        if (!string.IsNullOrEmpty(filters?.Language))
+            searchUrl += $"&relevanceLanguage={Uri.EscapeDataString(filters.Language)}";
+        if (!string.IsNullOrEmpty(filters?.TopicId))
+            searchUrl += $"&topicId={Uri.EscapeDataString(filters.TopicId)}";
+
         _cacheService.RecordApiCall();
+        QuotaUsed += QuotaCosts["search"];
         var searchResponse = await _httpClient.GetFromJsonAsync<YouTubeSearchResponse>(searchUrl, cancellationToken);
 
         if (searchResponse?.Items == null || searchResponse.Items.Count == 0)
@@ -86,19 +106,22 @@ public class YouTubeService : IYouTubeService
             return new List<LiveStream>();
         }
 
-        // Step 2: Get video details including live streaming details
+        // Get video details including live streaming details
         var videosUrl = $"{BaseUrl}/videos" +
             $"?part=snippet,liveStreamingDetails" +
             $"&id={Uri.EscapeDataString(string.Join(",", videoIds))}" +
             $"&key={Uri.EscapeDataString(_apiKey)}";
 
         _cacheService.RecordApiCall();
+        QuotaUsed += QuotaCosts["videos"];
         var videosResponse = await _httpClient.GetFromJsonAsync<YouTubeVideosResponse>(videosUrl, cancellationToken);
 
         if (videosResponse?.Items == null)
         {
             return new List<LiveStream>();
         }
+
+        var isUpcoming = eventType == "upcoming";
 
         // Map to LiveStream model
         var streams = videosResponse.Items.Select(video =>
@@ -109,17 +132,26 @@ public class YouTubeService : IYouTubeService
                 viewers = viewerCount;
             }
 
+            DateTime? scheduledStart = null;
+            if (DateTime.TryParse(video.LiveStreamingDetails?.ScheduledStartTime, out var parsed))
+            {
+                scheduledStart = parsed.ToUniversalTime();
+            }
+
             return new LiveStream
             {
                 VideoId = video.Id,
                 Title = video.Snippet?.Title ?? string.Empty,
+                Description = video.Snippet?.Description ?? string.Empty,
                 ChannelTitle = video.Snippet?.ChannelTitle ?? string.Empty,
                 ChannelId = video.Snippet?.ChannelId ?? string.Empty,
                 ThumbnailUrl = video.Snippet?.Thumbnails?.Medium?.Url
                     ?? video.Snippet?.Thumbnails?.Default?.Url
                     ?? string.Empty,
                 ActualStartTime = video.LiveStreamingDetails?.ActualStartTime,
-                ConcurrentViewers = viewers
+                ScheduledStartTime = scheduledStart,
+                ConcurrentViewers = viewers,
+                IsUpcoming = isUpcoming
             };
         }).ToList();
 
@@ -134,28 +166,44 @@ public class YouTubeService : IYouTubeService
                         string.Equals(b, s.ChannelTitle, StringComparison.OrdinalIgnoreCase)));
             }
 
-            // Apply min viewer filter
-            if (filters.MinViewers > 0)
+            // Apply viewer count filters (only for live, not upcoming)
+            if (eventType == "live")
             {
-                streams.RemoveAll(s =>
-                    !s.ConcurrentViewers.HasValue || s.ConcurrentViewers.Value < filters.MinViewers);
-            }
+                if (filters.MinViewers > 0)
+                {
+                    streams.RemoveAll(s =>
+                        !s.ConcurrentViewers.HasValue || s.ConcurrentViewers.Value < filters.MinViewers);
+                }
 
-            // Apply max viewer filter
-            if (filters.MaxViewers > 0)
-            {
-                streams.RemoveAll(s =>
-                    !s.ConcurrentViewers.HasValue || s.ConcurrentViewers.Value > filters.MaxViewers);
+                if (filters.MaxViewers > 0)
+                {
+                    streams.RemoveAll(s =>
+                        !s.ConcurrentViewers.HasValue || s.ConcurrentViewers.Value > filters.MaxViewers);
+                }
             }
         }
 
-        // Sort by viewer count (descending), nulls last
-        streams.Sort((a, b) =>
+        // Sort
+        if (isUpcoming)
         {
-            var av = a.ConcurrentViewers ?? -1;
-            var bv = b.ConcurrentViewers ?? -1;
-            return bv.CompareTo(av);
-        });
+            // Sort upcoming by scheduled start time (soonest first)
+            streams.Sort((a, b) =>
+            {
+                var at = a.ScheduledStartTime ?? DateTime.MaxValue;
+                var bt = b.ScheduledStartTime ?? DateTime.MaxValue;
+                return at.CompareTo(bt);
+            });
+        }
+        else
+        {
+            // Sort live by viewer count (descending), nulls last
+            streams.Sort((a, b) =>
+            {
+                var av = a.ConcurrentViewers ?? -1;
+                var bv = b.ConcurrentViewers ?? -1;
+                return bv.CompareTo(av);
+            });
+        }
 
         // Trim to requested max
         if (streams.Count > maxResults)
@@ -169,9 +217,6 @@ public class YouTubeService : IYouTubeService
         return streams;
     }
 
-    /// <summary>
-    /// Build an optimized YouTube search query using search operators
-    /// </summary>
     private static string BuildOptimizedQuery(string keywords)
     {
         var keywordList = keywords
@@ -186,16 +231,13 @@ public class YouTubeService : IYouTubeService
         if (keywordList.Count == 1)
             return keywordList[0];
 
-        // Use OR operator for multiple keywords
-        // Quote multi-word phrases for exact matching
         var formattedKeywords = keywordList.Select(k =>
         {
-            // If keyword contains spaces, wrap in quotes for exact phrase matching
             if (k.Contains(' '))
                 return $"\"{k}\"";
             return k;
         });
 
-        return string.Join(" | ", formattedKeywords); // | is OR in YouTube search
+        return string.Join(" | ", formattedKeywords);
     }
 }

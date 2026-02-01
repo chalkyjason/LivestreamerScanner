@@ -25,25 +25,57 @@
             <p class="tagline">YouTube Live Discovery</p>
           </div>
         </div>
-        <div class="header-status">
+        <div class="header-right">
+          <div id="quotaBadge" class="quota-badge" title="YouTube API quota usage">
+            <span class="quota-label">Quota</span>
+            <div class="quota-bar"><div id="quotaFill" class="quota-fill"></div></div>
+            <span id="quotaText" class="quota-text">0 / 10,000</span>
+          </div>
+          <button id="viewToggle" class="view-toggle" title="Toggle grid/list view">
+            <svg id="viewToggleIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+            </svg>
+          </button>
           <span id="status" class="status-badge"></span>
         </div>
       </div>
     </header>
 
+    <!-- Tab Bar: Live / Upcoming -->
+    <nav class="tab-bar">
+      <div class="tab-bar-inner">
+        <button class="tab-btn active" data-tab="live">Live Now</button>
+        <button class="tab-btn" data-tab="upcoming">Upcoming</button>
+      </div>
+    </nav>
+
     <section class="controls-section">
       <div class="controls-container">
-        <div class="search-group">
-          <label class="input-label" for="keywords">
-            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.35-4.35"></path>
-            </svg>
-            <input type="text" id="keywords" class="search-input" placeholder="Enter keywords (comma-separated)" />
-          </label>
+        <!-- Row 1: Search + Presets -->
+        <div class="search-row">
+          <div class="search-group">
+            <label class="input-label" for="keywords">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input type="text" id="keywords" class="search-input" placeholder="Enter keywords (comma-separated)" />
+            </label>
+          </div>
+          <div class="preset-group">
+            <select id="presetSelect" class="select-input preset-select">
+              <option value="">Presets...</option>
+            </select>
+            <button id="savePresetBtn" class="preset-btn" title="Save current search as preset">Save</button>
+            <button id="deletePresetBtn" class="preset-btn preset-btn-danger" title="Delete selected preset">Del</button>
+          </div>
         </div>
 
-        <div class="options-group">
+        <!-- Row 2: Filters -->
+        <div class="filters-row">
           <label class="select-label">
             <span class="label-text">Results</span>
             <select id="max" class="select-input">
@@ -53,6 +85,84 @@
             </select>
           </label>
 
+          <label class="select-label">
+            <span class="label-text">Sort</span>
+            <select id="sortOrder" class="select-input">
+              <option value="viewCount" selected>Most Viewers</option>
+              <option value="date">Newest</option>
+              <option value="relevance">Relevance</option>
+              <option value="rating">Rating</option>
+            </select>
+          </label>
+
+          <label class="select-label">
+            <span class="label-text">Region</span>
+            <select id="region" class="select-input">
+              <option value="">Any</option>
+              <option value="US">US</option>
+              <option value="GB">UK</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="JP">Japan</option>
+              <option value="KR">S. Korea</option>
+              <option value="BR">Brazil</option>
+              <option value="IN">India</option>
+              <option value="MX">Mexico</option>
+              <option value="ES">Spain</option>
+              <option value="IT">Italy</option>
+              <option value="RU">Russia</option>
+              <option value="PH">Philippines</option>
+            </select>
+          </label>
+
+          <label class="select-label">
+            <span class="label-text">Language</span>
+            <select id="lang" class="select-input">
+              <option value="">Any</option>
+              <option value="en">English</option>
+              <option value="es">Spanish</option>
+              <option value="pt">Portuguese</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="ja">Japanese</option>
+              <option value="ko">Korean</option>
+              <option value="hi">Hindi</option>
+              <option value="ru">Russian</option>
+              <option value="it">Italian</option>
+              <option value="zh">Chinese</option>
+              <option value="ar">Arabic</option>
+              <option value="tl">Filipino</option>
+            </select>
+          </label>
+
+          <label class="select-label">
+            <span class="label-text">Category</span>
+            <select id="topic" class="select-input">
+              <option value="">Any</option>
+              <option value="/m/0bzvm2">Gaming</option>
+              <option value="/m/04rlf">Music</option>
+              <option value="/m/06ntj">Sports</option>
+              <option value="/m/02jjt">Entertainment</option>
+              <option value="/m/019_rr">Lifestyle</option>
+              <option value="/m/01k8wb">Knowledge</option>
+              <option value="/m/098wr">Society</option>
+            </select>
+          </label>
+
+          <label class="select-label">
+            <span class="label-text">Safe Search</span>
+            <select id="safeSearch" class="select-input">
+              <option value="none" selected>Off</option>
+              <option value="moderate">Moderate</option>
+              <option value="strict">Strict</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- Row 3: Viewer filters + refresh + scan -->
+        <div class="action-row">
           <label class="select-label">
             <span class="label-text">Min Viewers</span>
             <input type="number" id="minViewers" class="number-input" placeholder="0" min="0" value="0" />
@@ -103,20 +213,7 @@
     </section>
 
     <main class="main-content">
-      <div id="results" class="results-grid">
-        <div class="empty-state">
-          <div class="empty-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-              <path d="M8 21h8"></path>
-              <path d="M12 17v4"></path>
-              <polygon points="10 8 16 11.5 10 15 10 8" fill="currentColor" stroke="none"></polygon>
-            </svg>
-          </div>
-          <h3>Ready to Scan</h3>
-          <p>Enter keywords and click "Scan Now" to discover live streams</p>
-        </div>
-      </div>
+      <div id="results" class="results-grid"></div>
     </main>
 
     <footer class="footer">

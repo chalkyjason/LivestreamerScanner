@@ -51,8 +51,47 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasBlockedChannels;
 
+    // New filter properties
+    [ObservableProperty]
+    private string _selectedRegion = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedLanguage = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedTopic = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedSortOrder = "viewCount";
+
+    [ObservableProperty]
+    private string _selectedSafeSearch = "none";
+
+    [ObservableProperty]
+    private string _activeTab = "live";
+
+    [ObservableProperty]
+    private bool _isLiveTab = true;
+
+    [ObservableProperty]
+    private bool _isUpcomingTab;
+
+    [ObservableProperty]
+    private int _quotaUsed;
+
+    [ObservableProperty]
+    private double _quotaPercent;
+
+    [ObservableProperty]
+    private string _quotaDisplay = "0 / 10,000";
+
+    // Presets
+    [ObservableProperty]
+    private string? _selectedPreset;
+
     public ObservableCollection<LiveStreamItem> Streams { get; } = new();
     public ObservableCollection<string> BlockedChannels { get; } = new();
+    public ObservableCollection<string> PresetNames { get; } = new();
 
     public List<int> MaxResultsOptions { get; } = new() { 10, 25, 50 };
     public List<RefreshOption> RefreshOptions { get; } = new()
@@ -64,6 +103,71 @@ public partial class MainViewModel : ObservableObject
         new RefreshOption(60, "60s")
     };
 
+    public List<FilterOption> RegionOptions { get; } = new()
+    {
+        new FilterOption("", "Any"),
+        new FilterOption("US", "US"),
+        new FilterOption("GB", "UK"),
+        new FilterOption("CA", "Canada"),
+        new FilterOption("AU", "Australia"),
+        new FilterOption("DE", "Germany"),
+        new FilterOption("FR", "France"),
+        new FilterOption("JP", "Japan"),
+        new FilterOption("KR", "S. Korea"),
+        new FilterOption("BR", "Brazil"),
+        new FilterOption("IN", "India"),
+        new FilterOption("MX", "Mexico"),
+        new FilterOption("ES", "Spain"),
+        new FilterOption("IT", "Italy"),
+        new FilterOption("RU", "Russia"),
+        new FilterOption("PH", "Philippines")
+    };
+
+    public List<FilterOption> LanguageOptions { get; } = new()
+    {
+        new FilterOption("", "Any"),
+        new FilterOption("en", "English"),
+        new FilterOption("es", "Spanish"),
+        new FilterOption("pt", "Portuguese"),
+        new FilterOption("fr", "French"),
+        new FilterOption("de", "German"),
+        new FilterOption("ja", "Japanese"),
+        new FilterOption("ko", "Korean"),
+        new FilterOption("hi", "Hindi"),
+        new FilterOption("ru", "Russian"),
+        new FilterOption("it", "Italian"),
+        new FilterOption("zh", "Chinese"),
+        new FilterOption("ar", "Arabic"),
+        new FilterOption("tl", "Filipino")
+    };
+
+    public List<FilterOption> TopicOptions { get; } = new()
+    {
+        new FilterOption("", "Any"),
+        new FilterOption("/m/0bzvm2", "Gaming"),
+        new FilterOption("/m/04rlf", "Music"),
+        new FilterOption("/m/06ntj", "Sports"),
+        new FilterOption("/m/02jjt", "Entertainment"),
+        new FilterOption("/m/019_rr", "Lifestyle"),
+        new FilterOption("/m/01k8wb", "Knowledge"),
+        new FilterOption("/m/098wr", "Society")
+    };
+
+    public List<FilterOption> SortOptions { get; } = new()
+    {
+        new FilterOption("viewCount", "Most Viewers"),
+        new FilterOption("date", "Newest"),
+        new FilterOption("relevance", "Relevance"),
+        new FilterOption("rating", "Rating")
+    };
+
+    public List<FilterOption> SafeSearchOptions { get; } = new()
+    {
+        new FilterOption("none", "Off"),
+        new FilterOption("moderate", "Moderate"),
+        new FilterOption("strict", "Strict")
+    };
+
     public MainViewModel(IYouTubeService youTubeService, IFavoritesService favoritesService, IBlockedChannelsService blockedChannelsService)
     {
         _youTubeService = youTubeService;
@@ -72,6 +176,7 @@ public partial class MainViewModel : ObservableObject
 
         _blockedChannelsService.BlockListChanged += RefreshBlockedList;
         RefreshBlockedList();
+        LoadPresetNames();
     }
 
     private void RefreshBlockedList()
@@ -84,6 +189,119 @@ public partial class MainViewModel : ObservableObject
         HasBlockedChannels = BlockedChannels.Count > 0;
     }
 
+    // ── Tabs ──
+
+    [RelayCommand]
+    private async Task SwitchToLive()
+    {
+        ActiveTab = "live";
+        IsLiveTab = true;
+        IsUpcomingTab = false;
+        await ScanAsync();
+    }
+
+    [RelayCommand]
+    private async Task SwitchToUpcoming()
+    {
+        ActiveTab = "upcoming";
+        IsLiveTab = false;
+        IsUpcomingTab = true;
+        await ScanAsync();
+    }
+
+    // ── Presets ──
+
+    private Dictionary<string, PresetData> GetPresets()
+    {
+        try
+        {
+            var json = Preferences.Get("searchPresets", "{}");
+            return System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, PresetData>>(json)
+                ?? new Dictionary<string, PresetData>();
+        }
+        catch
+        {
+            return new Dictionary<string, PresetData>();
+        }
+    }
+
+    private void SavePresetsStore(Dictionary<string, PresetData> presets)
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(presets);
+        Preferences.Set("searchPresets", json);
+        LoadPresetNames();
+    }
+
+    private void LoadPresetNames()
+    {
+        PresetNames.Clear();
+        foreach (var name in GetPresets().Keys.OrderBy(k => k))
+        {
+            PresetNames.Add(name);
+        }
+    }
+
+    [RelayCommand]
+    private void SavePreset(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var presets = GetPresets();
+        presets[name.Trim()] = new PresetData
+        {
+            Keywords = Keywords,
+            MaxResults = SelectedMaxResults,
+            MinViewers = MinViewers,
+            MaxViewers = MaxViewers,
+            SortOrder = SelectedSortOrder,
+            Region = SelectedRegion,
+            Language = SelectedLanguage,
+            TopicId = SelectedTopic,
+            SafeSearch = SelectedSafeSearch,
+            RefreshInterval = SelectedRefreshInterval
+        };
+        SavePresetsStore(presets);
+        SetStatus($"Saved preset \"{name.Trim()}\"", "success");
+    }
+
+    [RelayCommand]
+    private void DeletePreset(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var presets = GetPresets();
+        if (presets.Remove(name))
+        {
+            SavePresetsStore(presets);
+            SelectedPreset = null;
+            SetStatus($"Deleted preset \"{name}\"", "default");
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadPreset(string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return;
+
+        var presets = GetPresets();
+        if (!presets.TryGetValue(name, out var preset)) return;
+
+        Keywords = preset.Keywords;
+        SelectedMaxResults = preset.MaxResults;
+        MinViewers = preset.MinViewers;
+        MaxViewers = preset.MaxViewers;
+        SelectedSortOrder = preset.SortOrder;
+        SelectedRegion = preset.Region;
+        SelectedLanguage = preset.Language;
+        SelectedTopic = preset.TopicId;
+        SelectedSafeSearch = preset.SafeSearch;
+        SelectedRefreshInterval = preset.RefreshInterval;
+
+        await ScanAsync();
+    }
+
+    // ── Scanning ──
+
     [RelayCommand]
     private async Task ScanAsync()
     {
@@ -95,11 +313,10 @@ public partial class MainViewModel : ObservableObject
 
         if (!_youTubeService.IsConfigured)
         {
-            SetStatus("API key not configured - check appsettings.json", "error");
+            SetStatus("API key not configured - check Settings", "error");
             return;
         }
 
-        // Cancel any existing scan
         _scanCts?.Cancel();
         _scanCts = new CancellationTokenSource();
         var token = _scanCts.Token;
@@ -113,7 +330,13 @@ public partial class MainViewModel : ObservableObject
             {
                 MinViewers = MinViewers,
                 MaxViewers = MaxViewers,
-                BlockedChannels = _blockedChannelsService.GetBlockedChannels()
+                BlockedChannels = _blockedChannelsService.GetBlockedChannels(),
+                Region = SelectedRegion,
+                Language = SelectedLanguage,
+                TopicId = SelectedTopic,
+                SortOrder = SelectedSortOrder,
+                SafeSearch = SelectedSafeSearch,
+                EventType = ActiveTab == "upcoming" ? "upcoming" : "live"
             };
 
             var results = await _youTubeService.SearchLiveStreamsAsync(Keywords, SelectedMaxResults, filters, token);
@@ -135,17 +358,22 @@ public partial class MainViewModel : ObservableObject
             ShowEmptyState = false;
             ShowNoResults = Streams.Count == 0;
 
+            // Update quota
+            QuotaUsed = _youTubeService.QuotaUsed;
+            QuotaPercent = Math.Min((double)QuotaUsed / 10000 * 100, 100);
+            QuotaDisplay = $"{QuotaUsed:N0} / 10,000";
+
             var time = DateTime.Now.ToString("HH:mm");
+            var label = ActiveTab == "upcoming" ? "upcoming streams" : "live streams";
             if (Streams.Count > 0)
             {
-                SetStatus($"{Streams.Count} live streams found - Updated {time}", "success");
+                SetStatus($"{Streams.Count} {label} found - Updated {time}", "success");
             }
             else
             {
                 SetStatus($"No results - Updated {time}", "default");
             }
 
-            // Start auto-refresh if enabled
             StartAutoRefresh();
         }
         catch (OperationCanceledException)
@@ -183,6 +411,22 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task CopyLinkAsync(LiveStreamItem? item)
+    {
+        if (item?.Stream == null) return;
+
+        try
+        {
+            await Clipboard.SetTextAsync(item.Stream.Url);
+            SetStatus("Link copied!", "success");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Could not copy: {ex.Message}", "error");
+        }
+    }
+
+    [RelayCommand]
     private void StopScan()
     {
         _scanCts?.Cancel();
@@ -195,7 +439,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (item?.Stream == null) return;
 
-        var channelId = item.Stream.ChannelTitle; // Using channel title as ID since we don't have channel ID
+        var channelId = item.Stream.ChannelTitle;
         var channelTitle = item.Stream.ChannelTitle;
 
         if (item.IsFavorite)
@@ -220,7 +464,6 @@ public partial class MainViewModel : ObservableObject
         var channelTitle = item.Stream.ChannelTitle;
         _blockedChannelsService.BlockChannel(channelTitle);
 
-        // Remove all streams from this channel from the current results
         var toRemove = Streams.Where(s =>
             string.Equals(s.Stream.ChannelTitle, channelTitle, StringComparison.OrdinalIgnoreCase)).ToList();
         foreach (var s in toRemove)
@@ -305,10 +548,22 @@ public partial class MainViewModel : ObservableObject
 }
 
 public record RefreshOption(int Seconds, string Display);
+public record FilterOption(string Value, string Display);
 
-/// <summary>
-/// Wrapper class for LiveStream with favorite status
-/// </summary>
+public class PresetData
+{
+    public string Keywords { get; set; } = string.Empty;
+    public int MaxResults { get; set; } = 25;
+    public int MinViewers { get; set; }
+    public int MaxViewers { get; set; }
+    public string SortOrder { get; set; } = "viewCount";
+    public string Region { get; set; } = string.Empty;
+    public string Language { get; set; } = string.Empty;
+    public string TopicId { get; set; } = string.Empty;
+    public string SafeSearch { get; set; } = "none";
+    public int RefreshInterval { get; set; } = 20;
+}
+
 public partial class LiveStreamItem : ObservableObject
 {
     public LiveStream Stream { get; }
@@ -316,7 +571,7 @@ public partial class LiveStreamItem : ObservableObject
     [ObservableProperty]
     private bool _isFavorite;
 
-    public string FavoriteIcon => IsFavorite ? "❤️" : "🤍";
+    public string FavoriteIcon => IsFavorite ? "heart_filled.png" : "heart_empty.png";
 
     public LiveStreamItem(LiveStream stream, bool isFavorite)
     {

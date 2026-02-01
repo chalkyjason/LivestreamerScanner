@@ -13,10 +13,10 @@ if (!API_KEY) {
 }
 
 app.use(express.static("public"));
+app.use(express.json());
 
 /**
  * Simple in-memory cache to reduce API calls on rapid refreshes.
- * Keyed by query params; TTL short since live data changes fast.
  */
 const cache = new Map();
 const CACHE_TTL_MS = 10_000;
@@ -34,7 +34,12 @@ function setCache(key, value) {
   cache.set(key, { ts: Date.now(), value });
 }
 
-async function ytFetch(url) {
+/** Track API quota usage per session */
+let quotaUsed = 0;
+const QUOTA_COSTS = { search: 100, videos: 1, channels: 1 };
+
+async function ytFetch(url, quotaType = "search") {
+  quotaUsed += QUOTA_COSTS[quotaType] || 0;
   const res = await fetch(url);
   const text = await res.text();
   if (!res.ok) {
@@ -43,11 +48,14 @@ async function ytFetch(url) {
   return JSON.parse(text);
 }
 
+/** GET /api/quota - Return current quota usage */
+app.get("/api/quota", (_req, res) => {
+  res.json({ used: quotaUsed, limit: 10000 });
+});
+
 /**
- * GET /api/live?q=keyword1,keyword2&max=25&minViewers=0&maxViewers=0&blocked=ch1,ch2
- * - Uses search.list with order=viewCount for best live stream discovery
- * - Uses videos.list to get concurrentViewers (liveStreamingDetails)
- * - Filters by min/max viewer count and removes blocked channels
+ * GET /api/live - Search for live (or upcoming/completed) streams
+ * Params: q, max, minViewers, maxViewers, blocked, region, lang, topic, order, safeSearch, eventType
  */
 app.get("/api/live", async (req, res) => {
   try {
@@ -56,7 +64,15 @@ app.get("/api/live", async (req, res) => {
     const minViewers = parseInt(req.query.minViewers || "0", 10) || 0;
     const maxViewers = parseInt(req.query.maxViewers || "0", 10) || 0;
 
-    // Parse blocked channels list (comma-separated, case-insensitive)
+    // New filter params
+    const region = (req.query.region || "").toString().trim();
+    const lang = (req.query.lang || "").toString().trim();
+    const topic = (req.query.topic || "").toString().trim();
+    const order = (req.query.order || "viewCount").toString().trim();
+    const safeSearch = (req.query.safeSearch || "none").toString().trim();
+    const eventType = (req.query.eventType || "live").toString().trim();
+
+    // Parse blocked channels list
     const blockedRaw = (req.query.blocked || "").toString().trim();
     const blockedChannels = blockedRaw
       ? blockedRaw.split(",").map(s => s.trim().toLowerCase()).filter(Boolean)
@@ -66,7 +82,7 @@ app.get("/api/live", async (req, res) => {
       return res.status(400).json({ error: "Missing q (keywords)" });
     }
 
-    // Build optimized query: quote multi-word phrases, join with OR
+    // Build optimized query
     const keywords = qRaw
       .split(",")
       .map(s => s.trim())
@@ -76,41 +92,47 @@ app.get("/api/live", async (req, res) => {
       ? keywords[0]
       : keywords.map(k => k.includes(" ") ? `"${k}"` : k).join(" OR ");
 
-    const cacheKey = `q=${query}&max=${max}&min=${minViewers}&maxV=${maxViewers}&bl=${blockedChannels.sort().join(",")}`;
+    const cacheKey = `q=${query}&max=${max}&min=${minViewers}&maxV=${maxViewers}&bl=${blockedChannels.sort().join(",")}&r=${region}&l=${lang}&t=${topic}&o=${order}&ss=${safeSearch}&et=${eventType}`;
     const cached = getCache(cacheKey);
     if (cached) return res.json(cached);
 
     // Fetch extra results to account for filtering
     const fetchMax = Math.min(max + blockedChannels.length * 2 + 10, 50);
 
-    // 1) Search LIVE videos, ordered by viewCount for best discovery
-    const searchUrl =
+    // Build search URL with all params
+    let searchUrl =
       "https://www.googleapis.com/youtube/v3/search" +
-      `?part=snippet&type=video&eventType=live&maxResults=${fetchMax}` +
-      `&order=viewCount` +
-      `&safeSearch=none` +
+      `?part=snippet&type=video&eventType=${encodeURIComponent(eventType)}` +
+      `&maxResults=${fetchMax}` +
+      `&order=${encodeURIComponent(order)}` +
+      `&safeSearch=${encodeURIComponent(safeSearch)}` +
       `&q=${encodeURIComponent(query)}` +
       `&key=${encodeURIComponent(API_KEY)}`;
 
-    const searchData = await ytFetch(searchUrl);
+    if (region) searchUrl += `&regionCode=${encodeURIComponent(region)}`;
+    if (lang) searchUrl += `&relevanceLanguage=${encodeURIComponent(lang)}`;
+    if (topic) searchUrl += `&topicId=${encodeURIComponent(topic)}`;
+
+    const searchData = await ytFetch(searchUrl, "search");
 
     const videoIds = (searchData.items || [])
       .map(it => it?.id?.videoId)
       .filter(Boolean);
 
     if (videoIds.length === 0) {
-      const empty = { query, keywords, results: [], filtered: 0 };
+      const empty = { query, keywords, results: [], filtered: 0, quotaUsed };
       setCache(cacheKey, empty);
       return res.json(empty);
     }
 
-    // 2) Pull liveStreamingDetails (concurrentViewers) + snippet
+    // Pull liveStreamingDetails + snippet + description
     const videosUrl =
       "https://www.googleapis.com/youtube/v3/videos" +
-      `?part=snippet,liveStreamingDetails&id=${encodeURIComponent(videoIds.join(","))}` +
+      `?part=snippet,liveStreamingDetails` +
+      `&id=${encodeURIComponent(videoIds.join(","))}` +
       `&key=${encodeURIComponent(API_KEY)}`;
 
-    const videosData = await ytFetch(videosUrl);
+    const videosData = await ytFetch(videosUrl, "videos");
 
     let results = (videosData.items || []).map(v => {
       const viewers = v?.liveStreamingDetails?.concurrentViewers
@@ -121,48 +143,61 @@ app.get("/api/live", async (req, res) => {
         videoId: v.id,
         url: `https://www.youtube.com/watch?v=${v.id}`,
         title: v?.snippet?.title || "",
+        description: v?.snippet?.description || "",
         channelTitle: v?.snippet?.channelTitle || "",
         channelId: v?.snippet?.channelId || "",
         thumbnail: v?.snippet?.thumbnails?.medium?.url || v?.snippet?.thumbnails?.default?.url || "",
         publishedAt: v?.snippet?.publishedAt || "",
         actualStartTime: v?.liveStreamingDetails?.actualStartTime || null,
+        scheduledStartTime: v?.liveStreamingDetails?.scheduledStartTime || null,
         concurrentViewers: Number.isFinite(viewers) ? viewers : null
       };
     });
 
     const totalBeforeFilter = results.length;
 
-    // 3) Remove blocked channels
+    // Remove blocked channels
     if (blockedChannels.length > 0) {
       results = results.filter(r =>
         !blockedChannels.includes(r.channelTitle.toLowerCase())
       );
     }
 
-    // 4) Apply viewer count filters
-    if (minViewers > 0) {
-      results = results.filter(r =>
-        r.concurrentViewers !== null && r.concurrentViewers >= minViewers
-      );
-    }
-    if (maxViewers > 0) {
-      results = results.filter(r =>
-        r.concurrentViewers !== null && r.concurrentViewers <= maxViewers
-      );
+    // Apply viewer count filters (only for live, not upcoming)
+    if (eventType === "live") {
+      if (minViewers > 0) {
+        results = results.filter(r =>
+          r.concurrentViewers !== null && r.concurrentViewers >= minViewers
+        );
+      }
+      if (maxViewers > 0) {
+        results = results.filter(r =>
+          r.concurrentViewers !== null && r.concurrentViewers <= maxViewers
+        );
+      }
     }
 
-    // Sort: known viewer counts first, descending
-    results.sort((a, b) => {
-      const av = a.concurrentViewers ?? -1;
-      const bv = b.concurrentViewers ?? -1;
-      return bv - av;
-    });
+    // Sort
+    if (eventType === "upcoming") {
+      // Sort upcoming by scheduled start time (soonest first)
+      results.sort((a, b) => {
+        const at = a.scheduledStartTime ? new Date(a.scheduledStartTime).getTime() : Infinity;
+        const bt = b.scheduledStartTime ? new Date(b.scheduledStartTime).getTime() : Infinity;
+        return at - bt;
+      });
+    } else {
+      // Sort live by viewer count descending
+      results.sort((a, b) => {
+        const av = a.concurrentViewers ?? -1;
+        const bv = b.concurrentViewers ?? -1;
+        return bv - av;
+      });
+    }
 
-    // Trim to requested max
     results = results.slice(0, max);
 
     const filtered = totalBeforeFilter - results.length;
-    const payload = { query, keywords, results, filtered };
+    const payload = { query, keywords, results, filtered, quotaUsed };
     setCache(cacheKey, payload);
     res.json(payload);
   } catch (err) {

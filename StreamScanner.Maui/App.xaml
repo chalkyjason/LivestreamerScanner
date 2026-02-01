@@ -12,6 +12,9 @@
 
             <!-- Converters -->
             <converters:RefreshOptionConverter x:Key="RefreshOptionConverter" />
+            <converters:BoolToTabColorConverter x:Key="BoolToTabColorConverter" />
+            <converters:BoolToTabTextColorConverter x:Key="BoolToTabTextColorConverter" />
+            <converters:PercentToProgressConverter x:Key="PercentToProgressConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

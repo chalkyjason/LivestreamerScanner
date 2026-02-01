@@ -46,6 +46,9 @@ public class YouTubeSnippet
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = string.Empty;
+
     [JsonPropertyName("channelTitle")]
     public string ChannelTitle { get; set; } = string.Empty;
 
@@ -87,6 +90,9 @@ public class YouTubeLiveStreamingDetails
 {
     [JsonPropertyName("actualStartTime")]
     public DateTime? ActualStartTime { get; set; }
+
+    [JsonPropertyName("scheduledStartTime")]
+    public string? ScheduledStartTime { get; set; }
 
     [JsonPropertyName("concurrentViewers")]
     public string? ConcurrentViewers { get; set; }
