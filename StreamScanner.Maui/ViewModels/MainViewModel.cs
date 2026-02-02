@@ -51,21 +51,21 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasBlockedChannels;
 
-    // New filter properties
+    // New filter properties (bound to Picker SelectedItem as FilterOption objects)
     [ObservableProperty]
-    private string _selectedRegion = string.Empty;
+    private FilterOption? _selectedRegion;
 
     [ObservableProperty]
-    private string _selectedLanguage = string.Empty;
+    private FilterOption? _selectedLanguage;
 
     [ObservableProperty]
-    private string _selectedTopic = string.Empty;
+    private FilterOption? _selectedTopic;
 
     [ObservableProperty]
-    private string _selectedSortOrder = "viewCount";
+    private FilterOption? _selectedSortOrder;
 
     [ObservableProperty]
-    private string _selectedSafeSearch = "none";
+    private FilterOption? _selectedSafeSearch;
 
     [ObservableProperty]
     private string _activeTab = "live";
@@ -174,6 +174,13 @@ public partial class MainViewModel : ObservableObject
         _favoritesService = favoritesService;
         _blockedChannelsService = blockedChannelsService;
 
+        // Set default filter selections
+        _selectedSortOrder = SortOptions[0];      // viewCount
+        _selectedRegion = RegionOptions[0];        // Any
+        _selectedLanguage = LanguageOptions[0];    // Any
+        _selectedTopic = TopicOptions[0];          // Any
+        _selectedSafeSearch = SafeSearchOptions[0]; // none
+
         _blockedChannelsService.BlockListChanged += RefreshBlockedList;
         RefreshBlockedList();
         LoadPresetNames();
@@ -253,11 +260,11 @@ public partial class MainViewModel : ObservableObject
             MaxResults = SelectedMaxResults,
             MinViewers = MinViewers,
             MaxViewers = MaxViewers,
-            SortOrder = SelectedSortOrder,
-            Region = SelectedRegion,
-            Language = SelectedLanguage,
-            TopicId = SelectedTopic,
-            SafeSearch = SelectedSafeSearch,
+            SortOrder = SelectedSortOrder?.Value ?? "viewCount",
+            Region = SelectedRegion?.Value ?? "",
+            Language = SelectedLanguage?.Value ?? "",
+            TopicId = SelectedTopic?.Value ?? "",
+            SafeSearch = SelectedSafeSearch?.Value ?? "none",
             RefreshInterval = SelectedRefreshInterval
         };
         SavePresetsStore(presets);
@@ -290,11 +297,11 @@ public partial class MainViewModel : ObservableObject
         SelectedMaxResults = preset.MaxResults;
         MinViewers = preset.MinViewers;
         MaxViewers = preset.MaxViewers;
-        SelectedSortOrder = preset.SortOrder;
-        SelectedRegion = preset.Region;
-        SelectedLanguage = preset.Language;
-        SelectedTopic = preset.TopicId;
-        SelectedSafeSearch = preset.SafeSearch;
+        SelectedSortOrder = SortOptions.FirstOrDefault(o => o.Value == preset.SortOrder) ?? SortOptions[0];
+        SelectedRegion = RegionOptions.FirstOrDefault(o => o.Value == preset.Region) ?? RegionOptions[0];
+        SelectedLanguage = LanguageOptions.FirstOrDefault(o => o.Value == preset.Language) ?? LanguageOptions[0];
+        SelectedTopic = TopicOptions.FirstOrDefault(o => o.Value == preset.TopicId) ?? TopicOptions[0];
+        SelectedSafeSearch = SafeSearchOptions.FirstOrDefault(o => o.Value == preset.SafeSearch) ?? SafeSearchOptions[0];
         SelectedRefreshInterval = preset.RefreshInterval;
 
         await ScanAsync();
@@ -331,11 +338,11 @@ public partial class MainViewModel : ObservableObject
                 MinViewers = MinViewers,
                 MaxViewers = MaxViewers,
                 BlockedChannels = _blockedChannelsService.GetBlockedChannels(),
-                Region = SelectedRegion,
-                Language = SelectedLanguage,
-                TopicId = SelectedTopic,
-                SortOrder = SelectedSortOrder,
-                SafeSearch = SelectedSafeSearch,
+                Region = SelectedRegion?.Value ?? "",
+                Language = SelectedLanguage?.Value ?? "",
+                TopicId = SelectedTopic?.Value ?? "",
+                SortOrder = SelectedSortOrder?.Value ?? "viewCount",
+                SafeSearch = SelectedSafeSearch?.Value ?? "none",
                 EventType = ActiveTab == "upcoming" ? "upcoming" : "live"
             };
 
@@ -350,7 +357,7 @@ public partial class MainViewModel : ObservableObject
             Streams.Clear();
             foreach (var stream in results)
             {
-                var item = new LiveStreamItem(stream, _favoritesService.IsFavorite(stream.ChannelTitle));
+                var item = new LiveStreamItem(stream, _favoritesService.IsFavorite(stream.ChannelId));
                 Streams.Add(item);
             }
 
@@ -439,7 +446,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (item?.Stream == null) return;
 
-        var channelId = item.Stream.ChannelTitle;
+        var channelId = item.Stream.ChannelId;
         var channelTitle = item.Stream.ChannelTitle;
 
         if (item.IsFavorite)

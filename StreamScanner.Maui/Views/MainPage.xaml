@@ -205,6 +205,7 @@
                         <Label Text="SORT" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}" WidthRequest="120">
                             <Picker ItemsSource="{Binding SortOptions}"
+                                    SelectedItem="{Binding SelectedSortOrder}"
                                     ItemDisplayBinding="{Binding Display}"
                                     Style="{StaticResource OptionPicker}"
                                     VerticalOptions="Center" />
@@ -215,6 +216,7 @@
                         <Label Text="REGION" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}" WidthRequest="100">
                             <Picker ItemsSource="{Binding RegionOptions}"
+                                    SelectedItem="{Binding SelectedRegion}"
                                     ItemDisplayBinding="{Binding Display}"
                                     Style="{StaticResource OptionPicker}"
                                     VerticalOptions="Center" />
@@ -225,6 +227,7 @@
                         <Label Text="LANGUAGE" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}" WidthRequest="100">
                             <Picker ItemsSource="{Binding LanguageOptions}"
+                                    SelectedItem="{Binding SelectedLanguage}"
                                     ItemDisplayBinding="{Binding Display}"
                                     Style="{StaticResource OptionPicker}"
                                     VerticalOptions="Center" />
@@ -238,6 +241,7 @@
                         <Label Text="CATEGORY" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}" WidthRequest="110">
                             <Picker ItemsSource="{Binding TopicOptions}"
+                                    SelectedItem="{Binding SelectedTopic}"
                                     ItemDisplayBinding="{Binding Display}"
                                     Style="{StaticResource OptionPicker}"
                                     VerticalOptions="Center" />
@@ -248,6 +252,7 @@
                         <Label Text="SAFE SEARCH" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}" WidthRequest="100">
                             <Picker ItemsSource="{Binding SafeSearchOptions}"
+                                    SelectedItem="{Binding SelectedSafeSearch}"
                                     ItemDisplayBinding="{Binding Display}"
                                     Style="{StaticResource OptionPicker}"
                                     VerticalOptions="Center" />
