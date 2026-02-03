@@ -2,29 +2,38 @@ const $ = (id) => document.getElementById(id);
 
 // ── DOM Elements ──
 
-const keywordsEl     = $("keywords");
-const maxEl          = $("max");
-const minViewersEl   = $("minViewers");
-const maxViewersEl   = $("maxViewers");
-const refreshEl      = $("refreshSec");
-const sortOrderEl    = $("sortOrder");
-const regionEl       = $("region");
-const langEl         = $("lang");
-const topicEl        = $("topic");
-const safeSearchEl   = $("safeSearch");
-const scanBtn        = $("scanBtn");
-const resultsEl      = $("results");
-const statusEl       = $("status");
-const blockedSection = $("blockedSection");
-const blockedList    = $("blockedList");
+const keywordsEl      = $("keywords");
+const maxEl           = $("max");
+const minViewersEl    = $("minViewers");
+const maxViewersEl    = $("maxViewers");
+const refreshEl       = $("refreshSec");
+const sortOrderEl     = $("sortOrder");
+const regionEl        = $("region");
+const langEl          = $("lang");
+const topicEl         = $("topic");
+const safeSearchEl    = $("safeSearch");
+const scanBtn         = $("scanBtn");
+const stopBtn         = $("stopBtn");
+const resultsEl       = $("results");
+const statusEl        = $("status");
+const blockedSection  = $("blockedSection");
+const blockedList     = $("blockedList");
 const clearBlockedBtn = $("clearBlockedBtn");
-const viewToggle     = $("viewToggle");
-const quotaFill      = $("quotaFill");
-const quotaText      = $("quotaText");
-const quotaBadge     = $("quotaBadge");
-const presetSelect   = $("presetSelect");
-const savePresetBtn  = $("savePresetBtn");
+const viewToggle      = $("viewToggle");
+const quotaFill       = $("quotaFill");
+const quotaText       = $("quotaText");
+const quotaBadge      = $("quotaBadge");
+const presetSelect    = $("presetSelect");
+const savePresetBtn   = $("savePresetBtn");
 const deletePresetBtn = $("deletePresetBtn");
+const filtersToggle   = $("filtersToggle");
+const filtersPanel    = $("filtersPanel");
+const favoritesToggle = $("favoritesToggle");
+const favoritesPanel  = $("favoritesPanel");
+const favoritesOverlay = $("favoritesOverlay");
+const favoritesClose  = $("favoritesClose");
+const favoritesList   = $("favoritesList");
+const favCountEl      = $("favCount");
 
 let timer = null;
 let activeTab = "live";
@@ -96,6 +105,130 @@ function renderBlockedChannels() {
     blockedList.appendChild(tag);
   }
 }
+
+// ── Favorites (persisted in localStorage) ──
+
+function getFavorites() {
+  try {
+    return JSON.parse(localStorage.getItem("favorites") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveFavorites(list) {
+  localStorage.setItem("favorites", JSON.stringify(list));
+  updateFavCount();
+}
+
+function isFavorite(channelTitle) {
+  return getFavorites().some(f => f.channelTitle.toLowerCase() === channelTitle.toLowerCase());
+}
+
+function addFavorite(stream) {
+  const favs = getFavorites();
+  if (favs.some(f => f.channelTitle.toLowerCase() === stream.channelTitle.toLowerCase())) return;
+  favs.push({
+    channelTitle: stream.channelTitle,
+    thumbnail: stream.thumbnail,
+    url: stream.url,
+    title: stream.title,
+    addedAt: Date.now(),
+  });
+  saveFavorites(favs);
+}
+
+function removeFavorite(channelTitle) {
+  const favs = getFavorites().filter(
+    f => f.channelTitle.toLowerCase() !== channelTitle.toLowerCase()
+  );
+  saveFavorites(favs);
+}
+
+function updateFavCount() {
+  const count = getFavorites().length;
+  if (count > 0) {
+    favCountEl.textContent = count;
+    favCountEl.style.display = "";
+  } else {
+    favCountEl.style.display = "none";
+  }
+}
+
+function renderFavoritesList() {
+  const favs = getFavorites();
+
+  if (favs.length === 0) {
+    favoritesList.innerHTML = `
+      <div class="favorites-empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        </svg>
+        <p>No favorites yet</p>
+        <span>Click the heart on any stream to save it here</span>
+      </div>
+    `;
+    return;
+  }
+
+  favoritesList.innerHTML = "";
+
+  for (const fav of favs) {
+    const card = document.createElement("div");
+    card.className = "fav-card";
+    card.innerHTML = `
+      <div class="fav-card-thumb">
+        <img src="${escapeHtml(fav.thumbnail)}" alt="" loading="lazy" />
+      </div>
+      <div class="fav-card-info">
+        <p class="fav-card-channel">${escapeHtml(fav.channelTitle)}</p>
+        <p class="fav-card-title">${escapeHtml(fav.title)}</p>
+      </div>
+    `;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "fav-card-remove";
+    removeBtn.title = "Remove from favorites";
+    removeBtn.textContent = "\u00d7";
+    removeBtn.addEventListener("click", () => {
+      removeFavorite(fav.channelTitle);
+      renderFavoritesList();
+      // Update heart buttons in visible cards
+      document.querySelectorAll(".fav-btn").forEach(btn => {
+        if (btn.dataset.channel && btn.dataset.channel.toLowerCase() === fav.channelTitle.toLowerCase()) {
+          btn.classList.remove("is-fav");
+          btn.querySelector("svg path").removeAttribute("fill");
+        }
+      });
+    });
+    card.appendChild(removeBtn);
+    favoritesList.appendChild(card);
+  }
+}
+
+function openFavoritesPanel() {
+  renderFavoritesList();
+  favoritesOverlay.style.display = "";
+  favoritesPanel.classList.add("open");
+}
+
+function closeFavoritesPanel() {
+  favoritesPanel.classList.remove("open");
+  favoritesOverlay.style.display = "none";
+}
+
+favoritesToggle.addEventListener("click", openFavoritesPanel);
+favoritesClose.addEventListener("click", closeFavoritesPanel);
+favoritesOverlay.addEventListener("click", closeFavoritesPanel);
+
+// ── Filters Toggle ──
+
+filtersToggle.addEventListener("click", () => {
+  const isOpen = filtersPanel.style.display !== "none";
+  filtersPanel.style.display = isOpen ? "none" : "";
+  filtersToggle.classList.toggle("active", !isOpen);
+  localStorage.setItem("filtersOpen", !isOpen ? "1" : "0");
+});
 
 // ── Presets (persisted in localStorage) ──
 
@@ -506,6 +639,14 @@ function renderUpcomingCard(r) {
 }
 
 function addCardActions(card, r) {
+  const heartPath = "M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z";
+  const isFav = isFavorite(r.channelTitle);
+
+  // Action buttons container
+  const actionsDiv = document.createElement("div");
+  actionsDiv.className = "stream-actions";
+  actionsDiv.style.cssText = "display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;";
+
   // Copy link button
   const copyBtn = document.createElement("button");
   copyBtn.className = "copy-btn";
@@ -528,6 +669,28 @@ function addCardActions(card, r) {
     }, 1500);
   });
 
+  // Favorite button
+  const favBtn = document.createElement("button");
+  favBtn.className = "fav-btn" + (isFav ? " is-fav" : "");
+  favBtn.dataset.channel = r.channelTitle;
+  favBtn.title = isFav ? "Remove from favorites" : "Add to favorites";
+  favBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="${heartPath}"></path></svg>`;
+  favBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const nowFav = isFavorite(r.channelTitle);
+    if (nowFav) {
+      removeFavorite(r.channelTitle);
+      favBtn.classList.remove("is-fav");
+      favBtn.querySelector("svg").setAttribute("fill", "none");
+      favBtn.title = "Add to favorites";
+    } else {
+      addFavorite(r);
+      favBtn.classList.add("is-fav");
+      favBtn.querySelector("svg").setAttribute("fill", "currentColor");
+      favBtn.title = "Remove from favorites";
+    }
+  });
+
   // Block channel button
   const blockBtn = document.createElement("button");
   blockBtn.className = "block-btn";
@@ -546,10 +709,13 @@ function addCardActions(card, r) {
     setStatus(`Blocked ${r.channelTitle}`, "");
   });
 
+  actionsDiv.appendChild(copyBtn);
+  actionsDiv.appendChild(favBtn);
+  actionsDiv.appendChild(blockBtn);
+
   // Insert before stats div
   const statsDiv = card.querySelector(".stream-stats");
-  card.insertBefore(copyBtn, statsDiv);
-  card.insertBefore(blockBtn, statsDiv);
+  card.insertBefore(actionsDiv, statsDiv);
 }
 
 function render(results) {
@@ -638,6 +804,9 @@ function applyAutoRefresh() {
     timer = setInterval(() => {
       scanOnce();
     }, sec * 1000);
+    stopBtn.style.display = "";
+  } else {
+    stopBtn.style.display = "none";
   }
 }
 
@@ -646,6 +815,13 @@ function applyAutoRefresh() {
 scanBtn.addEventListener("click", async () => {
   await scanOnce();
   applyAutoRefresh();
+});
+
+stopBtn.addEventListener("click", () => {
+  if (timer) clearInterval(timer);
+  timer = null;
+  stopBtn.style.display = "none";
+  setStatus("Stopped", "");
 });
 
 refreshEl.addEventListener("change", applyAutoRefresh);
@@ -670,4 +846,11 @@ renderEmptyState();
 renderBlockedChannels();
 renderPresetOptions();
 updateQuota();
+updateFavCount();
 keywordsEl.value = "gaming, music, news";
+
+// Restore filters panel state
+if (localStorage.getItem("filtersOpen") === "1") {
+  filtersPanel.style.display = "";
+  filtersToggle.classList.add("active");
+}
