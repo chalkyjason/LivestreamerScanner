@@ -43,6 +43,6 @@ public partial class SettingsPage : ContentPage
 
     private async void OnBackTapped(object sender, EventArgs e)
     {
-        await Navigation.PopAsync();
+        await Shell.Current.GoToAsync("..");
     }
 }
