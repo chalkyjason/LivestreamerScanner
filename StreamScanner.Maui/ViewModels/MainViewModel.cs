@@ -578,7 +578,7 @@ public partial class LiveStreamItem : ObservableObject
     [ObservableProperty]
     private bool _isFavorite;
 
-    public string FavoriteIcon => IsFavorite ? "heart_filled.png" : "heart_empty.png";
+    public string FavoriteIcon => IsFavorite ? "❤️" : "🤍";
 
     public LiveStreamItem(LiveStream stream, bool isFavorite)
     {
