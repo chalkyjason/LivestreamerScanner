@@ -130,7 +130,7 @@
         </Grid>
 
         <!-- Controls Section -->
-        <ScrollView Grid.Row="2" Orientation="Vertical" HeightRequest="260">
+        <ScrollView Grid.Row="2" Orientation="Vertical">
             <Grid BackgroundColor="{StaticResource BgSecondary}"
                   Padding="20,12">
                 <Grid.RowDefinitions>
@@ -190,7 +190,7 @@
                 </Grid>
 
                 <!-- Row 1: Filters row 1 (Results, Sort, Region, Language) -->
-                <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+                <Grid Grid.Row="1" ColumnDefinitions="*,1.5*,*,*" ColumnSpacing="12" Margin="0,0,0,10">
                     <VerticalStackLayout Grid.Column="0" Spacing="4">
                         <Label Text="RESULTS" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
@@ -203,7 +203,7 @@
 
                     <VerticalStackLayout Grid.Column="1" Spacing="4">
                         <Label Text="SORT" Style="{StaticResource LabelText}" />
-                        <Border Style="{StaticResource InputBorder}" WidthRequest="120">
+                        <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding SortOptions}"
                                     SelectedItem="{Binding SelectedSortOrder}"
                                     ItemDisplayBinding="{Binding Display}"
@@ -214,7 +214,7 @@
 
                     <VerticalStackLayout Grid.Column="2" Spacing="4">
                         <Label Text="REGION" Style="{StaticResource LabelText}" />
-                        <Border Style="{StaticResource InputBorder}" WidthRequest="100">
+                        <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding RegionOptions}"
                                     SelectedItem="{Binding SelectedRegion}"
                                     ItemDisplayBinding="{Binding Display}"
@@ -225,7 +225,7 @@
 
                     <VerticalStackLayout Grid.Column="3" Spacing="4">
                         <Label Text="LANGUAGE" Style="{StaticResource LabelText}" />
-                        <Border Style="{StaticResource InputBorder}" WidthRequest="100">
+                        <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding LanguageOptions}"
                                     SelectedItem="{Binding SelectedLanguage}"
                                     ItemDisplayBinding="{Binding Display}"
@@ -236,10 +236,10 @@
                 </Grid>
 
                 <!-- Row 2: Filters row 2 (Category, Safe Search, Min/Max Viewers) -->
-                <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+                <Grid Grid.Row="2" ColumnDefinitions="1.5*,*,*,*" ColumnSpacing="12" Margin="0,0,0,10">
                     <VerticalStackLayout Grid.Column="0" Spacing="4">
                         <Label Text="CATEGORY" Style="{StaticResource LabelText}" />
-                        <Border Style="{StaticResource InputBorder}" WidthRequest="110">
+                        <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding TopicOptions}"
                                     SelectedItem="{Binding SelectedTopic}"
                                     ItemDisplayBinding="{Binding Display}"
@@ -250,7 +250,7 @@
 
                     <VerticalStackLayout Grid.Column="1" Spacing="4">
                         <Label Text="SAFE SEARCH" Style="{StaticResource LabelText}" />
-                        <Border Style="{StaticResource InputBorder}" WidthRequest="100">
+                        <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding SafeSearchOptions}"
                                     SelectedItem="{Binding SelectedSafeSearch}"
                                     ItemDisplayBinding="{Binding Display}"
@@ -266,8 +266,7 @@
                                    Placeholder="0"
                                    Keyboard="Numeric"
                                    Style="{StaticResource SearchEntry}"
-                                   VerticalOptions="Center"
-                                   WidthRequest="80" />
+                                   VerticalOptions="Center" />
                         </Border>
                     </VerticalStackLayout>
 
@@ -278,14 +277,13 @@
                                    Placeholder="No limit"
                                    Keyboard="Numeric"
                                    Style="{StaticResource SearchEntry}"
-                                   VerticalOptions="Center"
-                                   WidthRequest="80" />
+                                   VerticalOptions="Center" />
                         </Border>
                     </VerticalStackLayout>
                 </Grid>
 
                 <!-- Row 3: Refresh + Scan/Stop -->
-                <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
+                <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" Margin="0,0,0,10">
                     <VerticalStackLayout Grid.Column="0" Spacing="4">
                         <Label Text="AUTO-REFRESH" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
