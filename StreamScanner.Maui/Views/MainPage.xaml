@@ -137,8 +137,6 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
                 <!-- Row 0: Search + Presets -->
@@ -189,8 +187,8 @@
                             Padding="12,0" />
                 </Grid>
 
-                <!-- Row 1: Filters row 1 (Results, Sort, Region, Language) -->
-                <Grid Grid.Row="1" ColumnDefinitions="*,1.5*,*,*" ColumnSpacing="12" Margin="0,0,0,10">
+                <!-- Row 1: All Filters + Auto-Refresh + Scan/Stop in one row -->
+                <Grid Grid.Row="1" ColumnDefinitions="*,1.2*,*,*,1.2*,*,*,*,*,Auto,Auto" ColumnSpacing="10" Margin="0,0,0,10">
                     <VerticalStackLayout Grid.Column="0" Spacing="4">
                         <Label Text="RESULTS" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
@@ -233,11 +231,8 @@
                                     VerticalOptions="Center" />
                         </Border>
                     </VerticalStackLayout>
-                </Grid>
 
-                <!-- Row 2: Filters row 2 (Category, Safe Search, Min/Max Viewers) -->
-                <Grid Grid.Row="2" ColumnDefinitions="1.5*,*,*,*" ColumnSpacing="12" Margin="0,0,0,10">
-                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                    <VerticalStackLayout Grid.Column="4" Spacing="4">
                         <Label Text="CATEGORY" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding TopicOptions}"
@@ -248,7 +243,7 @@
                         </Border>
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout Grid.Column="1" Spacing="4">
+                    <VerticalStackLayout Grid.Column="5" Spacing="4">
                         <Label Text="SAFE SEARCH" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding SafeSearchOptions}"
@@ -259,7 +254,7 @@
                         </Border>
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout Grid.Column="2" Spacing="4">
+                    <VerticalStackLayout Grid.Column="6" Spacing="4">
                         <Label Text="MIN VIEWERS" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
                             <Entry Text="{Binding MinViewers}"
@@ -270,7 +265,7 @@
                         </Border>
                     </VerticalStackLayout>
 
-                    <VerticalStackLayout Grid.Column="3" Spacing="4">
+                    <VerticalStackLayout Grid.Column="7" Spacing="4">
                         <Label Text="MAX VIEWERS" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
                             <Entry Text="{Binding MaxViewers}"
@@ -280,11 +275,8 @@
                                    VerticalOptions="Center" />
                         </Border>
                     </VerticalStackLayout>
-                </Grid>
 
-                <!-- Row 3: Refresh + Scan/Stop -->
-                <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" Margin="0,0,0,10">
-                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                    <VerticalStackLayout Grid.Column="8" Spacing="4">
                         <Label Text="AUTO-REFRESH" Style="{StaticResource LabelText}" />
                         <Border Style="{StaticResource InputBorder}">
                             <Picker ItemsSource="{Binding RefreshOptions}"
@@ -295,14 +287,13 @@
                         </Border>
                     </VerticalStackLayout>
 
-                    <BoxView Grid.Column="1" />
-
-                    <Button Grid.Column="2"
+                    <Button Grid.Column="9"
                             Text="Scan Now"
                             Command="{Binding ScanCommand}"
                             IsEnabled="{Binding IsScanning, Converter={toolkit:InvertedBoolConverter}}"
-                            Style="{StaticResource PrimaryButton}" />
-                    <Button Grid.Column="3"
+                            Style="{StaticResource PrimaryButton}"
+                            VerticalOptions="End" />
+                    <Button Grid.Column="10"
                             Text="Stop"
                             Command="{Binding StopScanCommand}"
                             IsEnabled="{Binding IsScanning}"
@@ -312,11 +303,12 @@
                             BorderWidth="1"
                             CornerRadius="10"
                             HeightRequest="44"
-                            WidthRequest="80" />
+                            WidthRequest="80"
+                            VerticalOptions="End" />
                 </Grid>
 
-                <!-- Row 4: Blocked Channels Bar -->
-                <Grid Grid.Row="4"
+                <!-- Row 2: Blocked Channels Bar -->
+                <Grid Grid.Row="2"
                       IsVisible="{Binding HasBlockedChannels}"
                       ColumnDefinitions="Auto,*,Auto"
                       ColumnSpacing="8">
